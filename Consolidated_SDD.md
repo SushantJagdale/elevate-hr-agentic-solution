@@ -37,8 +37,8 @@ Enterprise employees currently face fragmented, time-consuming experiences when 
 
 | Dimension | In-Scope (MVP 1) | Out-of-Scope (Deferred to Future Phases) | Module Traceability |
 | :--- | :--- | :--- | :--- |
-| **User Interfaces** | • Standalone Web-based Conversational UI hosted on **GCP Cloud Run**<br>• Webhook / WebSocket API Integration for Enterprise Clients | • Native Mobile SDKs<br>• Voice / IVR / Telephony integrations<br>• Custom collaborative canvas UIs | `UI-MOD-01` |
-| **System Integrations** | • **WorkWeek (HCM):** Read profile & leave; Write contact info & leave requests<br>• **ServiceImmediately (ITSM/HRSD):** Read ticket details; Write create ticket, add comments, update status<br>• **Policy Repository:** Curated static PDFs/text stored in **Google Cloud Storage (GCS)** | • Payroll / Compensation management engines<br>• Performance review & talent management tools<br>• Live Enterprise Identity Provider SAML SSO (functional test credentials & **GCP Secret Manager** utilized for MVP)<br>• Financial ERP billing tools | `INT-MOD-01`<br>`INT-MOD-02`<br>`RAG-MOD-01` |
+| **User Interfaces** | • Standalone Web-based Conversational UI hosted on **GCP Cloud Run** with Server-Sent Events (SSE) streaming<br>• Webhook / WebSocket API Integration for Enterprise Clients | • Enterprise Chat Client Integrations (Slack Bolt SDK & Microsoft Teams Bot Framework - deferred to Phase 2)<br>• Native Mobile SDKs<br>• Voice / IVR / Telephony integrations<br>• Custom collaborative canvas UIs | `UI-MOD-01` |
+| **System Integrations** | • **WorkWeek (HCM):** Read profile & leave; Write contact info & leave requests<br>• **ServiceImmediately (ITSM/HRSD):** Read ticket details; Write create ticket, add comments, update status<br>• **Policy Repository:** Curated static PDFs/text stored in **Google Cloud Storage (GCS)** | • Payroll / Compensation management engines<br>• Performance review & talent management tools<br>• End-to-End OIDC Identity Propagation / RFC 8693 Token Exchange (MVP 1 uses functional test credentials in **GCP Secret Manager** with IAP user claim headers)<br>• Live Enterprise Identity Provider SAML SSO<br>• Financial ERP billing tools | `INT-MOD-01`<br>`INT-MOD-02`<br>`RAG-MOD-01` |
 | **Data Scope & Privacy** | • Core Employee Profile (ID, Name, Email, Dept, Role, Manager, Hire Date)<br>• Contact Info (Address, Phone Number)<br>• Leave Data (Accrued, Used, Remaining for Vacation & Sick)<br>• Incident Records (ID, Description, Category, Priority 1–4, State)<br>• Automated **Google Cloud DLP** regex/NER PII masking | • Processing raw salary, bank account, or medical records<br>• Cross-session persistent PII caching<br>• Multi-tenant cross-organization data partitioning | `SEC-MOD-01`<br>`SEC-MOD-02` |
 | **Supported Use Cases** | • **UC-1.1:** Policy Q&A with deep citation links<br>• **UC-1.2:** HR Self-Service (PTO balances & leave submission)<br>• **UC-1.3:** IT/HR Incident Management (Status queries, ticket creation)<br>• **UC-2.1:** Equipment Procurement (Policy $\rightarrow$ Profile verify $\rightarrow$ Ticket creation)<br>• **UC-2.2:** Medical Leave (Policy $\rightarrow$ Leave filing $\rightarrow$ Access routing ticket)<br>• **UC-2.3:** Relocation Support (Policy $\rightarrow$ Address update $\rightarrow$ Badge ticket) | • Dynamic manager approval workflows with multi-party sign-offs<br>• Automated bulk document generation (visa letters)<br>• Real-time multi-lingual translations (English only for MVP 1) | `UC-MOD-1.x`<br>`UC-MOD-2.x` |
 
@@ -147,6 +147,40 @@ flowchart TB
 5. **Tool Connectors & Origin Verifier (Private Service Connect):** Communicates with WorkWeek and ServiceImmediately REST APIs over GCP Private Service Connect (PSC). Injects custom provenance headers (`X-Origin-Agent: HR-Agentic-MVP`, `X-Acting-User: <EmpID>`) with credentials safely mounted from GCP Secret Manager, handling rate limiting, connection pooling, and exponential backoff retries.
 6. **Audit & Compliance Telemetry (BigQuery & Cloud Logging/Trace):** Asynchronously publishes immutable log events for every prompt, intermediate tool call, guardrail decision, and API transaction to a GCP BigQuery WORM audit vault and Cloud Logging with SPII pre-redacted via Cloud DLP.
 
+#### 1.3.1. pgvector Indexing, Scaling & Automated Maintenance Strategy
+
+To maintain sub-50ms query response times and vector retrieval recall above $0.95$ as the policy document volume scales from the MVP baseline (~100 documents / ~1,500 vector chunks) to enterprise scale (10,000+ documents / 150,000+ chunks), Cloud SQL `pgvector` implements the following explicit index management, tuning, and automated rebuilding strategy:
+
+##### 1. Index Selection & Parameter Tuning Hierarchy
+* **Dataset Scale $\le 10,000$ Vectors (~100–500 Policy Documents):**
+  * **Index Type:** **HNSW (Hierarchical Navigable Small World)** vector index.
+  * **Tuning Parameters:** `m = 16` (max connections per layer), `ef_construction = 64` (search size during build), `ef_search = 40` (search size during query execution).
+  * **Performance Rationale:** Provides near 100% recall ($>0.99$) with sub-10ms similarity search latency without requiring prior cluster training.
+* **Dataset Scale $> 10,000$ Vectors ($>500$ Policy Documents):**
+  * **Index Selection Evaluation:** Automated evaluation of **IVFFlat** (Inverted File Flat) vs **HNSW**. 
+  * **IVFFlat Parameter Tuning:** `lists = ceil(sqrt(N))` (e.g. `lists = 100` for 10,000 vectors; `lists = 387` for 150,000 vectors). `probes = ceil(lists * 0.1)`.
+
+##### 2. Explicit Quantitative Thresholds for Automated Index Rebuilding & Maintenance
+Index rebuilding and database optimization workflows are triggered automatically when any of the following quantitative operational thresholds are breached:
+
+| Maintenance Metric / Trigger | Quantitative Threshold | Monitoring Source | Action Executed |
+| :--- | :--- | :--- | :--- |
+| **Corpus Expansion Volume** | $\ge 20\%$ increase in total vector count since last index build | GCS Eventarc / Document AI Pipeline | Non-blocking `CREATE INDEX CONCURRENTLY` rebuild |
+| **Tuple Mutation Threshold** | $> 5,000$ aggregate `INSERT`, `UPDATE`, or `DELETE` vector rows | `pg_stat_user_tables.n_tup_mod` | Incremental index optimization & statistics update |
+| **Dead Tuple Bloat Ratio** | $> 15\%$ dead tuples relative to live table tuples | `pg_stat_user_tables.n_dead_tup` / `n_live_tup` | Non-blocking `VACUUM ANALYZE policy_embeddings;` |
+| **Retrieval Recall Breach** | Search recall drops below $0.95$ on continuous evaluation | Automated Cloud Build Quality Pipeline | Trigger HNSW `ef_search` increase ($40 \rightarrow 80$) & background index rebuild |
+
+##### 3. Automated Rebuilding Workflow & Zero-Downtime Execution
+* **Eventarc & Cloud Scheduler Automation:** Batch policy ingestion via Vertex AI Document AI emits an Eventarc event triggering a **GCP Cloud Workflow**. The workflow evaluates table statistics against the quantitative thresholds above.
+* **Zero-Downtime Non-Blocking Execution:** Re-indexing is executed using non-blocking PostgreSQL syntax:
+  ```sql
+  CREATE INDEX CONCURRENTLY policy_embeddings_hnsw_idx 
+  ON policy_embeddings USING hnsw (embedding vector_cosine_ops) 
+  WITH (m = 16, ef_construction = 64);
+  ```
+  During concurrent index creation, incoming live user queries dynamically fall back to the pre-existing index or sequential scan without query failures or elevated error rates.
+* **Scheduled Off-Peak Maintenance Window:** Routine full re-indexing and deep vacuuming are scheduled via Cloud Scheduler to run every Sunday at 03:00 UTC during off-peak utilization.
+
 ---
 
 ### 1.4. Alternatives Considered
@@ -213,6 +247,98 @@ flowchart LR
 3. **Event-Driven Asynchronous Processing:** Integrate Google Cloud Pub/Sub and Cloud Tasks for long-running workflows (e.g., manager approval chains, visa document processing). Webhooks from WorkWeek and ServiceImmediately will push state changes back to the conversational agent in real-time.
 4. **Human-in-the-Loop (HITL) Tier-2 Escalation:** Seamless escalation paths where the agent packages conversational context, tool execution history, and confidence scores into a ServiceImmediately interaction record and transfers the user to a live HR specialist.
 5. **Multi-Region Serverless High Availability:** Containerized auto-scaling deployment across multi-region **Google Cloud Run** with Google Cloud Global Load Balancing (GLB), serverless database replication (Cloud SQL / Firestore), and 99.99% SLA without fixed cluster management costs.
+
+---
+
+### 2.1. Identity Propagation Architecture & Migration Plan (MVP 1 vs Phase 2 OIDC)
+
+#### 1. MVP 1 Functional Credential Architecture & Security Interceptors
+In MVP 1, the downstream tool connectors for WorkWeek and ServiceImmediately utilize static functional test service account credentials securely mounted from **Google Cloud Secret Manager** and routed over **GCP Private Service Connect (PSC)**. 
+
+To mitigate impersonation and privilege escalation risks under this model:
+* **Ingress Claims Extraction:** Google Cloud Identity-Aware Proxy (IAP) authenticates the user session at the Cloud Run boundary, validating the corporate IdP OIDC JWT assertion (`x-goog-authenticated-user-jwt`) and injecting verified identity headers (`x-goog-authenticated-user-email` and `x-goog-authenticated-user-id`).
+* **Payload Parameter Guardrail Matching:** Prior to invoking downstream tool connectors, the ADK Orchestrator's deterministic guardrail engine cross-checks the target employee ID requested in the payload against the verified IAP session claims. Users cannot query or mutate records belonging to other employees unless authorized by explicit manager roles.
+* **Provenance Header Injection:** Connectors append provenance headers (`X-Origin-Agent: HR-Agentic-MVP`, `X-Acting-User: <EmpID>`) to all outbound HTTP calls for tracing.
+* **WORM Audit Cross-Referencing:** Every downstream call is logged to the BigQuery WORM audit vault, correlating the IAP user email, session ID, tool call parameters, and functional account response.
+
+#### 2. Phase 2 Target State: End-to-End OIDC Identity Propagation (RFC 8693)
+Phase 2 replaces functional Secret Manager credentials with end-to-end user identity propagation using the **OAuth 2.0 Token Exchange framework (`RFC 8693`)** via **GCP Workload Identity Federation**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as Enterprise Employee
+    participant IAP as GCP IAP / Web UI
+    participant Agent as ADK Cloud Run Core
+    participant WIF as GCP Workload Identity Federation
+    participant HCM as WorkWeek REST API (OAuth2)
+
+    User->>IAP: 1. Send Request (IdP OIDC Session)
+    IAP->>Agent: 2. Forward Request + x-goog-authenticated-user-jwt
+    Agent->>WIF: 3. Token Exchange Request (RFC 8693)<br>(SubjectToken = IAP JWT, Target = WorkWeek API Scope)
+    WIF-->>Agent: 4. Issue Short-Lived Scoped User OAuth Bearer Token (TTL 15m)
+    Agent->>HCM: 5. Execute API Call (Authorization: Bearer <UserToken>)
+    HCM-->>Agent: 6. Return Scoped User Data (Native HCM ACL Enforced)
+```
+
+* **Zero Shared Credentials:** Eliminates static functional API keys in Secret Manager for downstream user actions.
+* **Native Authorization Compliance:** Downstream systems enforce their native role-based access control (RBAC) and attribute-based access control (ABAC) rules directly on the employee's delegated token.
+* **Native System Audit Trails:** WorkWeek and ServiceImmediately audit logs record transaction history natively under the employee's personal user ID rather than an automated service account.
+
+---
+
+### 2.2. Enterprise Chat Client Integration Architecture (Slack & MS Teams Phase 2)
+
+#### 1. MVP 1 Standalone Web UI Baseline & User Experience Scope
+For MVP 1, user interactions are hosted on a standalone, responsive Web Chat UI built in React and deployed on serverless **GCP Cloud Run**. The UI streams responses in real-time via Server-Sent Events (SSE) and is secured behind **Google Cloud Identity-Aware Proxy (IAP)**. While providing an enterprise-grade UI experience, this requires users to navigate away from standard enterprise collaboration tools.
+
+#### 2. Phase 2 Native Enterprise Chat Client Integration Strategy
+Phase 2 introduces native messaging integration for **Slack** and **Microsoft Teams**, enabling users to perform policy queries, leave requests, and IT ticketing directly within their daily chat channels:
+
+```mermaid
+flowchart TD
+    subgraph EnterpriseClients ["Enterprise Chat Ingress"]
+        SlackClient["Slack Desktop / Mobile App\n(Slash Commands & Message Events)"]
+        TeamsClient["Microsoft Teams Client\n(Adaptive Card Submissions)"]
+    end
+
+    subgraph ChannelAdapters ["GCP Cloud Run Channel Adapter Layer"]
+        SlackAdapter["Slack Bolt Adapter Service\n• Signature Verification (Secret Manager)\n• Block Kit Renderer"]
+        TeamsAdapter["MS Teams Bot Adapter Service\n• Bot Framework Token Auth\n• Adaptive Card Renderer"]
+    end
+
+    subgraph GenericCore ["GCP Native ADK Agent Core"]
+        AgentAPI["ADK REST / WebSocket API Gateway\n(Normalized AgentMessageRequest Payload)"]
+        ADKEngine["ADK ReAct Engine & Model Tiering"]
+    end
+
+    SlackClient -->|HTTPS Webhook| SlackAdapter
+    TeamsClient -->|HTTPS Webhook| TeamsAdapter
+
+    SlackAdapter -->|Normalized JSON| AgentAPI
+    TeamsAdapter -->|Normalized JSON| AgentAPI
+
+    AgentAPI --> ADKEngine
+    ADKEngine -->|AgentMessageResponse| AgentAPI
+
+    AgentAPI -->|Streaming Tokens / Cards| SlackAdapter -->|Slack response_url| SlackClient
+    AgentAPI -->|Streaming Tokens / Cards| TeamsAdapter -->|Proactive Bot Message| TeamsClient
+```
+
+#### 3. Technical Connector Specifications
+* **Slack Integration (Slack Bolt for Python):**
+  * Deployed on serverless GCP Cloud Run behind Cloud Armor.
+  * Verifies incoming Slack request signatures (`X-Slack-Signature`) using HMAC-SHA256 secrets from GCP Secret Manager.
+  * Implements Slack Slash Command `/hr-assistant` and conversational app mentions.
+  * Formats complex interactions (e.g. leave confirmation or ticket status) using **Slack Block Kit** interactive components.
+  * Uses Slack `response_url` and deferred acknowledge responses (`200 OK` within 3,000 ms) to support asynchronous LLM reasoning turns without Slack gateway timeouts.
+* **Microsoft Teams Integration (Bot Framework SDK):**
+  * Deployed on GCP Cloud Run with Azure Bot Service messaging endpoints.
+  * Validates JWT bearer tokens issued by Microsoft Identity Platform.
+  * Render responses using **Microsoft Adaptive Cards v1.5** for rich inputs (date pickers, leave reason dropdowns, action buttons).
+* **Channel-Agnostic ADK Adapter Architecture:**
+  * The ADK Orchestrator core operates on a generic messaging payload structure (`AgentMessageRequest` containing `user_id`, `session_id`, `text_prompt`, and `channel_metadata`).
+  * Switching or adding client channels requires zero modification to the underlying ReAct agent, tool connectors, guardrails, or pgvector retrieval pipeline.
 
 ---
 
@@ -565,6 +691,21 @@ flowchart TD
 
 ---
 
+### 4.3. Downstream Authentication & Identity Propagation Security Controls
+
+#### 1. Security Architecture for MVP 1 Secret Manager Credentials
+In MVP 1, end-to-end OIDC token propagation to WorkWeek and ServiceImmediately is deferred to Phase 2; the backend tool connectors rely on static functional test service account credentials stored in **Google Cloud Secret Manager**. To prevent privilege escalation, lateral movement, or unauthorized mutations under this functional credential model, the following multi-layered security interceptors are strictly enforced:
+
+* **Strict Identity Extraction & Claim Validation:** At the GCP Cloud Run ingress perimeter, Google Cloud Identity-Aware Proxy (IAP) cryptographically validates the user's IdP JWT token (`x-goog-authenticated-user-jwt`). The authenticated employee ID and email (`x-goog-authenticated-user-email`) are extracted and bound directly to the ADK session execution context.
+* **Payload Authorization Firewall:** The ADK Guardrail engine executes programmatic check functions (`validate_user_authorization(session_user_id, target_payload_user_id)`) before dispatching any API call to WorkWeek or ServiceImmediately. Any attempt by a user to query or modify data belonging to another employee ID triggers an immediate hard security block (`BLOCKED_UNAUTHORIZED_SCOPE`) and emits an alert to Cloud Logging.
+* **Network & Secret Isolation:** Connector outbound traffic is strictly restricted to private IP addresses over **GCP Private Service Connect (PSC)** with VPC Service Controls (VPC-SC) perimeters blocking unauthorized external egress. API keys and bearer tokens are fetched dynamically in-memory from Secret Manager with a 15-minute secret caching TTL.
+* **Immutable Audit Provenance:** All downstream tool calls append custom headers (`X-Origin-Agent: HR-Agentic-MVP`, `X-Acting-User: <EmpID>`) and write an immutable audit record to the BigQuery WORM vault containing `(timestamp, iap_user_email, acting_emp_id, tool_name, http_status, response_hash)`.
+
+#### 2. Transition Plan to Phase 2 OIDC Token Exchange (RFC 8693)
+Phase 2 will replace Secret Manager static credentials with zero-trust **OAuth 2.0 Token Exchange (`RFC 8693`)** via **GCP Workload Identity Federation**. In this model, the IAP user JWT is dynamically exchanged for short-lived, user-scoped bearer tokens for WorkWeek and ServiceNow, ensuring that downstream HCM/ITSM systems perform authorization checks natively against the calling employee's identity.
+
+---
+
 ## 5. Integration Details & Error Handling
 
 ### 5.1. Component Failure Mapping & Resilience Matrix
@@ -662,10 +803,13 @@ gantt
 | **RSK-01** | **LLM Hallucination on Policy Q&A** | 4 | 2 | **8 (Medium)** | Enforce Strict Grounding ($>0.85$ attribution score against serverless vector store). Gemini 1.5/2.0 Pro outputs deterministic refusal if ungrounded. |
 | **RSK-02** | **Accidental Unauthorized Mutation** | 5 | 1 | **5 (Medium)** | Hardcoded Guardrail Firewalls: All PSC connector calls enforce user parameter matching against authenticated IAP session tokens. |
 | **RSK-03** | **Prompt Injection / Jailbreak** | 4 | 2 | **8 (Medium)** | Multi-layered GCP input interception: Pre-execution safety filter using Gemini 3.6 Flash and strict Cloud DLP pattern matching. |
-| **RSK-04** | **Downstream API Schema Drift** | 3 | 3 | **9 (Medium)** | Automated Contract Testing in Cloud Build; JsonSchema payload validation at connector boundaries. |
+| **RSK-04** | **Downstream API Schema Drift** | 3 | 3 | **9 (Medium)** | Automated Contract Testing in Cloud Build (Pact / JsonSchema) triggered on nightly cron (`0 2 * * *`), PR pushes to connector/schema paths, and pre-deployment promotion gates; JsonSchema payload validation at connector boundaries. |
 | **RSK-05** | **Vertex AI API Quota Exhaustion** | 4 | 2 | **8 (Medium)** | Request quota increases upfront; implement Gemini 3.6 Flash fallback tiering and context caching. |
 | **RSK-06** | **Cost Over-Provisioning Risk** | 3 | 2 | **6 (Low)** | Adopt 100% Serverless Cloud Run + IAP + Cloud SQL/Firestore Vector Search scaling to zero when idle ($0 idle fee). |
 | **RSK-07** | **Model Latency Spike on Complex Turns** | 3 | 2 | **6 (Low)** | Stream response tokens over SSE; leverage Gemini 3.6 Flash for 90%+ queries with sub-100ms response. |
+| **RSK-08** | **Secret Manager Static Credentials vs OIDC Propagation** | 4 | 3 | **12 (High)** | MVP 1 relies on functional test credentials in Secret Manager rather than end-to-end OIDC identity propagation. Mitigation: Ingress identity verification via IAP JWT, payload user ID cross-checking against IAP claims prior to PSC connector calls, custom provenance headers (`X-Acting-User`), and BigQuery WORM audit logging. Full migration to RFC 8693 OIDC Token Exchange scheduled for Phase 2. |
+| **RSK-09** | **Enterprise Chat Client Integration Deferral** | 3 | 3 | **9 (Medium)** | Users restricted to standalone Cloud Run Web UI in MVP 1 rather than native Slack or MS Teams. Mitigation: Web UI optimized for desktop/mobile with SSO auto-login; ADK Agent API backend fully decoupled via generic adapter layer for seamless Phase 2 Slack Bolt and MS Teams Bot Framework integration. |
+| **RSK-10** | **Vector Search Degradation at Document Scale** | 3 | 2 | **6 (Low)** | Document volume scaling risks degrading pgvector ANN retrieval recall or search latency. Mitigation: Automated Cloud Scheduler workflow executing non-blocking `CREATE INDEX CONCURRENTLY` based on explicit quantitative thresholds ($\ge 20\%$ corpus growth, $>5,000$ modified tuples, $>15\%$ dead tuple ratio). |
 
 ---
 
@@ -693,6 +837,26 @@ flowchart LR
 
 ---
 
+### 9.1. Automated Contract Testing Strategy & Cloud Build Triggers
+
+To prevent downstream HCM (WorkWeek) and ITSM (ServiceImmediately) API schema drift from breaking the agent's tool execution functions, **Google Cloud Build** executes an automated contract testing suite (Pact / JSON Schema validation engine) against downstream sandbox API endpoints.
+
+#### 1. Explicit Execution Frequency & Trigger Conditions
+
+| Execution Mode | Trigger Condition / Schedule | Operational Scope & Target Environment | Pipeline Action on Failure |
+| :--- | :--- | :--- | :--- |
+| **Nightly Scheduled Regression** | Cloud Scheduler cron (`0 2 * * *` - 2:00 AM UTC daily) | Full contract test suite against live WorkWeek & ServiceNow sandbox endpoints | Log schema drift report to BigQuery; alert Integration Engineering team via PagerDuty/Slack. |
+| **CI/CD Pull Request / Commit** | Cloud Build Webhook Trigger on PR creation or push to `main` affecting `/connectors/*`, `/schemas/*`, or `openapi_specs/*` | Mock server contract validation asserting request/response JSON Schema compatibility | Block PR merge; mark Cloud Build status check as `FAILED`. |
+| **Pre-Deployment Gate** | Release promotion step in Terraform deployment pipeline | End-to-end integration test against sandbox APIs | Abort deployment; prevent image promotion to Cloud Run Staging/Production instances. |
+| **On-Demand Execution** | Operator command (`gcloud builds submit --config=cloudbuild-contract.yaml`) | Targeted test execution for specific connector modules during development | Output real-time execution logs to CLI and Cloud Logging console. |
+
+#### 2. Contract Test Validation Scope
+* **Schema Field Integrity:** Verifies mandatory payload fields (e.g. `employee_id`, `leave_type`, `start_date`, `end_date`), field data types, and enum values.
+* **HTTP Status Code Mapping:** Validates connector handling for successful HTTP `200/201`, client error HTTP `400/401/403/404/409`, and server error HTTP `500/503` responses.
+* **Backward Compatibility Verification:** Detects breaking changes such as removed parameters, renamed attributes, or altered date formats before code deployment.
+
+---
+
 ## 10. Resolutions of Open Questions
 
 | Item # | Original Question | Final Resolved Technical Decision | Binding Specification |
@@ -702,3 +866,7 @@ flowchart LR
 | **OQ-03** | Which client interface hosts pilot UAT testing? | **Resolved:** Standalone React Web Chat UI hosted on **GCP Cloud Run** with IAP authentication and SSE streaming. | `UI-CONF-03` |
 | **OQ-04** | Do functional test credentials require IP allowlisting? | **Resolved:** Credentials traverse **GCP Private Service Connect (PSC)** with static Cloud NAT egress IP allowlisting on enterprise firewalls. | `SEC-NET-04` |
 | **OQ-05** | What ServiceNow category receives medical leave IT routing tasks (UC-2.2)? | **Resolved:** Incident category set to `HRSD / Employee Relations` with default Assignment Group `HR-Tier2-Ops` and Priority `3 - Moderate`. | `SM-TICKET-05` |
+| **OQ-06** | How are Secret Manager static credentials secured vs OIDC identity propagation? | **Resolved:** MVP 1 validates IAP JWT claims at ingress, enforces payload user parameter matching against session identity, injects `X-Acting-User` provenance headers, and logs immutable BigQuery WORM audit events. Phase 2 migrates to RFC 8693 OIDC Token Exchange via GCP Workload Identity Federation. | `SEC-AUTH-06` |
+| **OQ-07** | What is the roadmap and architecture for enterprise chat integration (Slack & Teams)? | **Resolved:** MVP 1 uses standalone Cloud Run Web UI. Phase 2 introduces Slack Bolt and MS Teams Bot Framework webhooks on Cloud Run behind API Gateway, interfacing with a decoupled channel-agnostic ADK `AgentMessageRequest` API. | `UI-CHAT-07` |
+| **OQ-08** | What are the exact trigger conditions and frequencies for Cloud Build contract testing? | **Resolved:** Executed via Pact / JSON Schema runner on nightly cron (`0 2 * * *`), CI/CD PR pushes to `/connectors/*` or `/schemas/*`, and mandatory pre-deployment promotion gates in Terraform release pipelines. | `QA-CONTRACT-08` |
+| **OQ-09** | What are the explicit thresholds and strategies for automated pgvector index rebuilding? | **Resolved:** HNSW index default for $\le 10,000$ vectors; automated non-blocking `CREATE INDEX CONCURRENTLY` triggered when corpus grows $\ge 20\%$, tuple mutations $>5,000$, dead tuple bloat $>15\%$, or retrieval recall drops $<0.95$. Scheduled maintenance every Sunday at 03:00 UTC. | `RAG-INDEX-09` |
