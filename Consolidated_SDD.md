@@ -57,14 +57,14 @@ flowchart TB
     subgraph SecurityPerimeter ["2. GCP Zero-Trust Security Perimeter & Ingress"]
         CloudArmor["Google Cloud Armor WAF\n(DDoS Protection & Bot Control)"]
         IAP["Google Cloud Identity-Aware Proxy (IAP)\n(OAuth2/OIDC AuthN & User Context Injector)"]
-        InputSafety["Input Guardrail Engine\n• Vertex AI Safety Filters (Gemini 1.5 Flash)\n• Google Cloud DLP (SPII Anonymizer)\n• Prompt Injection Classifier"]
+        InputSafety["Input Guardrail Engine\n• Vertex AI Safety Filters (Gemini 3.6 Flash)\n• Google Cloud DLP (SPII Anonymizer)\n• Prompt Injection Classifier"]
     end
 
     subgraph AgentCore ["3. GCP Native Serverless Agent Core (VPC-SC Isolated)"]
         ADKOrchestrator["Google Agent Development Kit (ADK) Orchestrator\n(Deployed on GCP Cloud Run - Serverless)\n• Intent Router & ReAct Execution Engine\n• Ephemeral Session State (GCP Firestore / Cloud Run Cache)"]
         
         subgraph LLMTiering ["Vertex AI Model Engine (Cost-Optimized)"]
-            GeminiFlash["Vertex AI Gemini 1.5 / 2.0 Flash\n(Sub-100ms Safety, Routing & Policy Synthesis - 90%+ Queries)"]
+            GeminiFlash["Gemini 3.6 Flash\n(Sub-100ms Safety, Routing & Policy Synthesis - 90%+ Queries)"]
             GeminiPro["Vertex AI Gemini 1.5 / 2.0 Pro\n(Multi-Turn Reasoning & Complex Tool Execution - Escalation Only)"]
         end
         
@@ -141,7 +141,7 @@ flowchart TB
 
 #### Core Components Breakdown
 1. **Security & Ingress Layer (Google Cloud Armor & Identity-Aware Proxy - IAP):** Enforces TLS 1.3 termination and OAuth2/OIDC user identity verification via GCP IAP directly at the Cloud Run Ingress boundary. This eliminates expensive third-party or dedicated gateway fees (e.g. Apigee) while ensuring zero-trust identity propagation.
-2. **Serverless Agentic Orchestration Core (Google ADK on Cloud Run):** Implements a stateful ReAct (Reasoning + Acting) execution model deployed on serverless GCP Cloud Run (scaling to zero when idle). Powered primarily by **Vertex AI Gemini 1.5 / 2.0 Flash** for sub-100ms routing, safety scanning, and RAG response generation, escalating to **Gemini 1.5 / 2.0 Pro** only for complex multi-turn multi-system transactions. Ephemeral session state is managed via GCP Firestore (Datastore mode) with zero idle cost.
+2. **Serverless Agentic Orchestration Core (Google ADK on Cloud Run):** Implements a stateful ReAct (Reasoning + Acting) execution model deployed on serverless GCP Cloud Run (scaling to zero when idle). Powered primarily by **Gemini 3.6 Flash** for sub-100ms routing, safety scanning, and RAG response generation, escalating to **Gemini 1.5 / 2.0 Pro** only for complex multi-turn multi-system transactions. Ephemeral session state is managed via GCP Firestore (Datastore mode) with zero idle cost.
 3. **Deterministic Guardrails Engine:** Acts as an execution firewall between the LLMs and tool connectors. Enforces hardcoded Python domain validations (e.g., date chronological sanity, balance overage checks, ticket state transition matrices) independent of LLM probabilistic outputs.
 4. **Cost-Effective RAG Service (Cloud SQL pgvector / Firestore Vector Search):** Ingests corporate policies from Google Cloud Storage via Vertex AI Document AI, generating 768-dimensional embeddings using `text-embedding-004`. Stores vectors in **Cloud SQL for PostgreSQL with `pgvector`** or **Firestore Vector Search**, avoiding expensive dedicated vector search endpoints ($100-$200+/mo base fee) while providing hybrid dense + BM25 keyword matching for ~1,500 policy chunks.
 5. **Tool Connectors & Origin Verifier (Private Service Connect):** Communicates with WorkWeek and ServiceImmediately REST APIs over GCP Private Service Connect (PSC). Injects custom provenance headers (`X-Origin-Agent: HR-Agentic-MVP`, `X-Acting-User: <EmpID>`) with credentials safely mounted from GCP Secret Manager, handling rate limiting, connection pooling, and exponential backoff retries.
@@ -155,7 +155,7 @@ flowchart TB
 | :--- | :--- | :--- | :--- |
 | **Ingress & Authentication Layer** | **GCP Identity-Aware Proxy (IAP) + Cloud Run Ingress** | Apigee API Gateway, Enterprise Third-Party Gateway | • **IAP + Cloud Run** provides zero-trust OAuth2/OIDC user identity verification natively at near zero cost ($0 fixed fee).<br>• *Apigee* introduces multi-thousand dollar monthly base fees, which is disproportionate and unnecessary for an internal HR tool. |
 | **Agent Orchestration Compute** | **Google Agent Development Kit (ADK) on Serverless Cloud Run** | GKE Enterprise, Custom LangGraph Engine, CrewAI | • **Cloud Run** scales to 0 instances when idle, incurring cost only during active user turns (~$5/month).<br>• *GKE Enterprise* imposes ~$1,800/month in cluster management fees regardless of traffic.<br>• ADK provides cyclic state graphs, deterministic checkpointing, and native Vertex AI integration. |
-| **LLM Model Strategy** | **Cost-Optimized Model Tiering (Gemini 1.5/2.0 Flash primary, Pro on escalation)** | Gemini 1.5 Pro for all turns, Self-Hosted Llama models | • **Gemini 1.5/2.0 Flash** handles 90%+ of turns (intent classification, safety checks, RAG synthesis) at ultra-low cost ($0.075/1M input tokens).<br>• **Gemini 1.5/2.0 Pro** is invoked only for multi-system transaction planning (UC-2.1, UC-2.2).<br>• Managed Vertex AI endpoints eliminate self-hosted GPU scaling overhead while fulfilling GCP security compliance. |
+| **LLM Model Strategy** | **Cost-Optimized Model Tiering (Gemini 3.6 Flash primary, Pro on escalation)** | Gemini 1.5 Pro for all turns, Self-Hosted Llama models | • **Gemini 3.6 Flash** handles 90%+ of turns (intent classification, safety checks, RAG synthesis) at ultra-low cost ($0.075/1M input tokens).<br>• **Gemini 1.5/2.0 Pro** is invoked only for multi-system transaction planning (UC-2.1, UC-2.2).<br>• Managed Vertex AI endpoints eliminate self-hosted GPU scaling overhead while fulfilling GCP security compliance. |
 | **Retrieval & Vector Storage Strategy** | **Cloud SQL (pgvector) / Firestore Vector Search** | Dedicated Vertex AI Vector Search Endpoints, Cosine-only Vector DB | • **Cloud SQL / Firestore Vector Search** provides serverless vector similarity and hybrid BM25 lexical search at cents to dollars per month for ~1,500 policy chunks.<br>• *Dedicated Vertex Vector Search Endpoints* require dedicated compute node pools ($100-$200+/month base cost) unsuited for lightweight internal RAG. |
 | **Guardrail Implementation** | **Dual-Layer Guardrails (Google Cloud DLP + Vertex AI Safety Filters + Programmatic Boundary Enforcers)** | Prompt-only Instructions ("System Prompts") | • System prompts frequently suffer from jailbreaks and non-deterministic compliance.<br>• Dual-layer design couples sub-100ms classifier models and Cloud DLP filters with strict programmatic code validations for leave balances and ticket state logic. |
 | **State & Memory Management** | **GCP Firestore / Cloud Run Ephemeral Session Cache** | Dedicated Cloud Memorystore Redis Instance | • **Firestore / Cloud Run Cache** stores active session state (30-minute idle TTL) with zero idle cost.<br>• *Cloud Memorystore Redis* incurs a minimum fixed managed instance fee ($35+/mo) for low-volume internal traffic. |
@@ -174,11 +174,11 @@ flowchart LR
     end
 
     subgraph MultiAgentMesh ["2. Production Multi-Agent Serverless Mesh (Cloud Run Services)"]
-        Supervisor["Supervisor Dispatcher Agent\n(Google ADK / Gemini 1.5/2.0 Flash)"]
+        Supervisor["Supervisor Dispatcher Agent\n(Google ADK / Gemini 3.6 Flash)"]
         HRAgent["HR Specialist Agent\n(Google ADK / Gemini 1.5/2.0 Pro)"]
         ITAgent["ITSM Specialist Agent\n(Google ADK / Gemini 1.5/2.0 Pro)"]
         BenefitsAgent["Benefits Specialist Agent\n(Google ADK / Gemini 1.5/2.0 Pro)"]
-        FacilitiesAgent["Facilities Specialist Agent\n(Google ADK / Gemini 1.5/2.0 Flash)"]
+        FacilitiesAgent["Facilities Specialist Agent\n(Google ADK / Gemini 3.6 Flash)"]
     end
 
     subgraph EventStream ["3. GCP Asynchronous Backbone"]
@@ -209,7 +209,7 @@ flowchart LR
 
 ### Future Extensibility & Roadmap
 1. **Identity Federation & OIDC On-Behalf-Of (OBO) Delegation:** Transition from functional backend credentials in GCP Secret Manager to user-level OAuth 2.0 Token Exchange via GCP Workload Identity Federation (`RFC 8693`). Downstream API calls inherit exact user ACLs and permissions, eliminating privilege escalation risks.
-2. **Multi-Agent Specialization (Supervisor-Worker Hierarchy):** Replace the monolithic orchestrator with specialized serverless domain agents (HR Agent, IT Desk Agent, Global Mobility Agent, Benefits Agent) deployed on **GCP Cloud Run** utilizing **Google ADK** with **Gemini 1.5 / 2.0 Pro** for domain reasoning and **Gemini 1.5 / 2.0 Flash** for high-speed dispatching.
+2. **Multi-Agent Specialization (Supervisor-Worker Hierarchy):** Replace the monolithic orchestrator with specialized serverless domain agents (HR Agent, IT Desk Agent, Global Mobility Agent, Benefits Agent) deployed on **GCP Cloud Run** utilizing **Google ADK** with **Gemini 1.5 / 2.0 Pro** for domain reasoning and **Gemini 3.6 Flash** for high-speed dispatching.
 3. **Event-Driven Asynchronous Processing:** Integrate Google Cloud Pub/Sub and Cloud Tasks for long-running workflows (e.g., manager approval chains, visa document processing). Webhooks from WorkWeek and ServiceImmediately will push state changes back to the conversational agent in real-time.
 4. **Human-in-the-Loop (HITL) Tier-2 Escalation:** Seamless escalation paths where the agent packages conversational context, tool execution history, and confidence scores into a ServiceImmediately interaction record and transfers the user to a live HR specialist.
 5. **Multi-Region Serverless High Availability:** Containerized auto-scaling deployment across multi-region **Google Cloud Run** with Google Cloud Global Load Balancing (GLB), serverless database replication (Cloud SQL / Firestore), and 99.99% SLA without fixed cluster management costs.
@@ -220,8 +220,8 @@ flowchart LR
 
 ### 3.1. Agent Architecture & Execution Loop
 The agent operates via a strictly bounded **Plan-Validate-Execute-Verify** cycle using the Google Agent Development Kit (ADK):
-1. **Input Interception:** Payload is checked via **Gemini 1.5 / 2.0 Flash** and **Google Cloud DLP** for prompt injection, jailbreaks, and off-topic domain queries ($<100\text{ ms}$). SPII is masked before logging.
-2. **Intent Parsing & Context Hydration:** The Orchestrator (**Gemini 1.5 / 2.0 Flash** for fast queries, escalating to **Gemini 1.5 / 2.0 Pro** for complex multi-system turns) resolves user intent and extracts entity parameters. If context is needed, real-time data fetching is triggered via Private Service Connect.
+1. **Input Interception:** Payload is checked via **Gemini 3.6 Flash** and **Google Cloud DLP** for prompt injection, jailbreaks, and off-topic domain queries ($<100\text{ ms}$). SPII is masked before logging.
+2. **Intent Parsing & Context Hydration:** The Orchestrator (**Gemini 3.6 Flash** for fast queries, escalating to **Gemini 1.5 / 2.0 Pro** for complex multi-system turns) resolves user intent and extracts entity parameters. If context is needed, real-time data fetching is triggered via Private Service Connect.
 3. **Guardrail Pre-Validation:** Prior to tool execution, parameters are validated against hard business rules (e.g., requested leave days $\le$ available balance).
 4. **Tool Execution:** Connectors execute downstream calls with request origin metadata, mounted GCP Secret Manager tokens, and timeout/retry wrappers.
 5. **Output Grounding & Verification:** For policy queries, the RAG verifier checks that every claim is grounded in retrieved vector chunks (Cloud SQL pgvector / Firestore Vector Search) and appends source citations. The output guardrail validates toxicity and redaction before streaming to the client.
@@ -237,8 +237,8 @@ sequenceDiagram
     autonumber
     actor User as Employee (Client UI)
     participant IAP as GCP Identity-Aware Proxy (IAP) & Cloud Run Ingress
-    participant Guard as Cloud DLP & Vertex Safety Filter (Gemini 1.5 Flash)
-    participant Agent as Google ADK Orchestrator (Gemini 1.5 Flash)
+    participant Guard as Cloud DLP & Vertex Safety Filter (Gemini 3.6 Flash)
+    participant Agent as Google ADK Orchestrator (Gemini 3.6 Flash)
     participant RAG as Serverless RAG (Cloud SQL pgvector / Firestore)
     participant Audit as GCP BigQuery WORM Audit Vault
 
@@ -271,7 +271,7 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     actor User as Employee
-    participant Agent as Google ADK Orchestrator (Gemini 1.5 Flash / Pro)
+    participant Agent as Google ADK Orchestrator (Gemini 3.6 Flash / Pro)
     participant Cache as GCP Firestore Ephemeral Session Cache
     participant Guard as WorkWeek Guardrail Engine
     participant WW as WorkWeek PSC Connector
@@ -313,7 +313,7 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     actor User as Employee
-    participant Agent as Google ADK Orchestrator (Gemini 1.5 Flash)
+    participant Agent as Google ADK Orchestrator (Gemini 3.6 Flash)
     participant Guard as ServiceImmediately Guardrails
     participant SM as ServiceImmediately PSC Connector
     participant SM_API as ServiceImmediately ITSM API
@@ -482,7 +482,7 @@ Stored in **Cloud SQL (pgvector)** or **Firestore Vector Search** for ~1,500 pol
     "user_id_hash": { "type": "string" },
     "prompt_safety_verdict": { "type": "string", "enum": ["ALLOWED", "BLOCKED_INJECTION", "BLOCKED_SPII", "BLOCKED_DOMAIN"] },
     "intent_category": { "type": "string" },
-    "model_used": { "type": "string", "enum": ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.0-pro"] },
+    "model_used": { "type": "string", "enum": ["gemini-3.6-flash", "gemini-1.5-pro", "gemini-2.0-pro"] },
     "tool_calls": {
       "type": "array",
       "items": {
@@ -518,7 +518,7 @@ flowchart TD
         subgraph SecFilter ["Security & Privacy Layer"]
             direction TB
             PIIMask["Google Cloud DLP (SPII Redactor)"]
-            InjCheck["Vertex AI Safety Classifier (Gemini 1.5 Flash)"]
+            InjCheck["Vertex AI Safety Classifier (Gemini 3.6 Flash)"]
             TopicBound["HR/IT Domain Containment Guard"]
         end
     end
@@ -552,7 +552,7 @@ flowchart TD
 | **System Availability** | **99.9% (MVP 1)**<br>**99.99% (Production Target)** | Dual-zone Cloud Run serverless auto-scaling; multi-zone database availability; Cloud Load Balancing. |
 | **Disaster Recovery (RTO)** | **Recovery Time Objective (RTO) < 1 Hour** | Automated Terraform IaC serverless redeployment pipeline; multi-region Cloud Run container failover. |
 | **Disaster Recovery (RPO)** | **Recovery Point Objective (RPO) < 15 Minutes** | Automated Cloud SQL / Firestore backup snapshots; real-time GCS policy bucket multi-region replication. |
-| **Safety Scan Overhead** | **$<300\text{ ms}$ (p95)** | Light-weight Vertex AI Gemini 1.5 Flash classifier + optimized Google Cloud DLP API call batching. |
+| **Safety Scan Overhead** | **$<300\text{ ms}$ (p95)** | Light-weight Vertex AI Gemini 3.6 Flash classifier + optimized Google Cloud DLP API call batching. |
 | **Total Response Latency** | **$<10.0\text{ s}$ (p95 total turn)** | Vertex AI context caching enabled; streaming response tokens over Server-Sent Events (SSE). |
 | **Idle Infrastructure Cost** | **$0 / hour (when idle)** | 100% Serverless Cloud Run + IAP + Firestore vector search scaling to zero instances. |
 
@@ -608,7 +608,7 @@ flowchart TD
 
 | GCP Cost Component | Monthly Consumption Volume | Unit Cost (USD) | Estimated Monthly Cost |
 | :--- | :--- | :--- | :--- |
-| **Routing, Safety & Policy LLM (Gemini 1.5 / 2.0 Flash)** | 72,000 turns (130M input tokens, 18M output tokens - 90% of turns) | • Input: \$0.075 / 1M tokens<br>• Output: \$0.30 / 1M tokens | \$15.15 |
+| **Routing, Safety & Policy LLM (Gemini 3.6 Flash)** | 72,000 turns (130M input tokens, 18M output tokens - 90% of turns) | • Input: \$0.075 / 1M tokens<br>• Output: \$0.30 / 1M tokens | \$15.15 |
 | **Reasoning LLM (Gemini 1.5 / 2.0 Pro)** | 8,000 complex turns (14.4M input tokens, 2M output tokens - 10% of turns) | • Input: \$1.25 / 1M tokens (cached: \$0.31)<br>• Output: \$5.00 / 1M tokens | \$10.00 |
 | **Cost-Effective Vector Store (Cloud SQL pgvector / Firestore)** | 100 Policy Documents (~1,500 chunks, 768-dim), 20,000 queries | • Cloud SQL / Firestore Serverless Vector Storage & Querying | \$3.50 |
 | **Vertex AI Document AI** | 100 PDF Documents Ingested (~1,000 pages parsed) | • \$1.50 / 1,000 pages | \$1.50 |
@@ -632,9 +632,9 @@ gantt
     section Phase 2: Connectors & Guardrails
     WorkWeek PSC Connector & Validation Rules  :p2_1, 2026-08-28, 10d
     ServiceImmediately PSC Connector & State   :p2_2, 2026-09-02, 10d
-    Cloud DLP & Gemini 1.5 Flash Interceptor   :p2_3, 2026-09-05, 7d
+    Cloud DLP & Gemini 3.6 Flash Interceptor   :p2_3, 2026-09-05, 7d
     section Phase 3: ADK Orchestration
-    Google ADK Agent State Machine (Gemini 1.5/2.0):p3_1, 2026-09-12, 10d
+    Google ADK Agent State Machine (Gemini 3.6 Flash / Pro):p3_1, 2026-09-12, 10d
     Cloud Run Web Chat UI Integration          :p3_2, 2026-09-16, 7d
     section Phase 4: UAT & Launch
     End-to-End Evaluation & Red Teaming        :p4_1, 2026-09-23, 8d
@@ -661,11 +661,11 @@ gantt
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | **RSK-01** | **LLM Hallucination on Policy Q&A** | 4 | 2 | **8 (Medium)** | Enforce Strict Grounding ($>0.85$ attribution score against serverless vector store). Gemini 1.5/2.0 Pro outputs deterministic refusal if ungrounded. |
 | **RSK-02** | **Accidental Unauthorized Mutation** | 5 | 1 | **5 (Medium)** | Hardcoded Guardrail Firewalls: All PSC connector calls enforce user parameter matching against authenticated IAP session tokens. |
-| **RSK-03** | **Prompt Injection / Jailbreak** | 4 | 2 | **8 (Medium)** | Multi-layered GCP input interception: Pre-execution safety filter using Gemini 1.5 Flash and strict Cloud DLP pattern matching. |
+| **RSK-03** | **Prompt Injection / Jailbreak** | 4 | 2 | **8 (Medium)** | Multi-layered GCP input interception: Pre-execution safety filter using Gemini 3.6 Flash and strict Cloud DLP pattern matching. |
 | **RSK-04** | **Downstream API Schema Drift** | 3 | 3 | **9 (Medium)** | Automated Contract Testing in Cloud Build; JsonSchema payload validation at connector boundaries. |
-| **RSK-05** | **Vertex AI API Quota Exhaustion** | 4 | 2 | **8 (Medium)** | Request quota increases upfront; implement Gemini Flash fallback tiering and context caching. |
+| **RSK-05** | **Vertex AI API Quota Exhaustion** | 4 | 2 | **8 (Medium)** | Request quota increases upfront; implement Gemini 3.6 Flash fallback tiering and context caching. |
 | **RSK-06** | **Cost Over-Provisioning Risk** | 3 | 2 | **6 (Low)** | Adopt 100% Serverless Cloud Run + IAP + Cloud SQL/Firestore Vector Search scaling to zero when idle ($0 idle fee). |
-| **RSK-07** | **Model Latency Spike on Complex Turns** | 3 | 2 | **6 (Low)** | Stream response tokens over SSE; leverage Gemini 1.5 Flash for 90%+ queries with sub-100ms response. |
+| **RSK-07** | **Model Latency Spike on Complex Turns** | 3 | 2 | **6 (Low)** | Stream response tokens over SSE; leverage Gemini 3.6 Flash for 90%+ queries with sub-100ms response. |
 
 ---
 
