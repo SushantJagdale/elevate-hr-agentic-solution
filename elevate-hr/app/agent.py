@@ -18,6 +18,10 @@ import os
 import re
 from zoneinfo import ZoneInfo
 
+import httpx
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
+
 from google.adk.agents import Agent
 from google.adk.apps import App
 from google.adk.models import Gemini
@@ -64,7 +68,7 @@ serviceimmediately_mcp = McpToolset(
     )
 )
 
-# 3. Define the Policy Knowledge Base Query tool
+# 3. Define Orchestrator shared tools
 def query_policy_knowledge_base(query: str) -> str:
     """Queries the corporate policy document database to retrieve policy details.
     
@@ -87,7 +91,71 @@ def query_policy_knowledge_base(query: str) -> str:
         )
     return "I am sorry, but official policy records do not contain sufficient information regarding this request."
 
-# 4. Construct ADK Agent with orchestration instructions
+async def resolve_employee_id() -> str:
+    """Resolves the current authenticated user session's corporate employee ID.
+    
+    Returns:
+        The employee ID string (e.g. 'EMP-336').
+    """
+    headers = {"X-MCP-Token": MCP_TOKEN}
+    try:
+        async with httpx.AsyncClient(headers=headers) as client:
+            async with streamable_http_client(WORKWEEK_URL, http_client=client) as (read, write, _):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    res = await session.call_tool("get_current_employee_id", {})
+                    if hasattr(res, "content"):
+                        for item in res.content:
+                            if hasattr(item, "text"):
+                                return item.text.strip()
+                    return str(res).strip()
+    except Exception as e:
+        print("Warning: Failed to resolve employee ID dynamically, falling back to EMP-336.", e)
+    return "EMP-336"
+
+# 4. Construct WorkWeek worker subagent
+workweek_worker = Agent(
+    name="workweek_worker",
+    model=Gemini(
+        model=MODEL,
+        retry_options=types.HttpRetryOptions(attempts=3),
+    ),
+    description="Handles employee profile updates, vacation and sick leave requests, remaining leave balances, and cancellations on the WorkWeek system.",
+    instruction=(
+        "You are the specialized WorkWeek worker agent.\n"
+        "You manage employee profile context and leave workflows.\n"
+        "For any request involving leave management or personal contact info:\n"
+        "1. Check if the caller/orchestrator has provided the employee ID in the conversation. If not, ask the user or the orchestrator.\n"
+        "2. If requesting leave, fetch the leave balances first using `get_employee_balances`.\n"
+        "3. Validate that the start and end dates are chronological (start_date <= end_date) and the employee has sufficient vacation remaining.\n"
+        "4. If valid, request time off using `request_time_off` and output the reference ID and status.\n"
+        "5. If requested, check leave history using `get_leave_requests` or cancel pending leave using `cancel_leave_request`."
+    ),
+    tools=[workweek_mcp],
+)
+
+# 5. Construct ServiceImmediately worker subagent
+itsm_worker = Agent(
+    name="itsm_worker",
+    model=Gemini(
+        model=MODEL,
+        retry_options=types.HttpRetryOptions(attempts=3),
+    ),
+    description="Handles IT incident tickets, support tickets, checking ticket lists, adding timeline comments, and ticket status updates on the ServiceImmediately system.",
+    instruction=(
+        "You are the specialized ServiceImmediately IT support agent.\n"
+        "You manage support tickets and incident reports.\n"
+        "For any request involving support ticket creation, comment updates, or status queries:\n"
+        "1. Check if the caller/orchestrator has provided the employee ID. If not, ask for it.\n"
+        "2. Classify the priority (priority='1 - Critical' requires outage, crash, or system downtime keywords in the description).\n"
+        "3. Fetch active tickets using `list_tickets` to check for duplicates in the same category within the last 24 hours (prevent duplication).\n"
+        "4. If no duplicate exists, create the ticket using `create_ticket` and output the incident number and state.\n"
+        "5. If requested, update a ticket status using `update_ticket_status` or add timeline comments with `add_ticket_comment`."
+    ),
+    tools=[serviceimmediately_mcp],
+)
+
+# 6. Construct Master Orchestrator Agent
 root_agent = Agent(
     name="root_agent",
     model=Gemini(
@@ -95,35 +163,31 @@ root_agent = Agent(
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction=(
-        "You are an advanced HR Agentic Virtual Assistant for Altostrat enterprise employees.\n"
-        "You have access to the WorkWeek database (leave management and profiles), "
-        "the ServiceImmediately ticketing database (IT and HR tickets), and the corporate policy knowledge base.\n\n"
+        "You are the master HR Orchestrator agent for Altostrat enterprise employees.\n"
+        "You coordinate employee self-service queries and support workflows by delegating to specialized subagents:\n\n"
         
-        "Follow these strict orchestration guidelines for user requests:\n"
-        "1. **Policy Q&A:** When a user asks about policy details, call `query_policy_knowledge_base` with their query. "
-        "Return the grounded response with citations exactly as provided.\n"
+        "Follow these strict routing and orchestration guidelines:\n"
+        "1. **Employee Identity Resolution:** Before delegating any request to a subagent that requires an employee ID context, "
+        "first call the tool `resolve_employee_id` to get their active employee ID. Pass this employee ID explicitly in your delegation message to the subagent.\n"
         
-        "2. **Time-Off Submission:** When a user requests to book time-off:\n"
-        "   a. Call `get_current_employee_id()` to resolve their active employee ID.\n"
-        "   b. Call `get_employee_balances(employee_id)` to check their remaining vacation and sick leave balances.\n"
-        "   c. Validate that their request is chronological (start_date <= end_date) and they have enough vacation balance.\n"
-        "   d. If valid, submit the request using `request_time_off` and output the reference ID and status.\n"
-        "   e. If invalid or if they have insufficient balance, explain this clearly and do not make the submission call.\n"
+        "2. **Policy Q&A:** When a user asks about general policy rules (e.g., bereavement leave duration, hardware monitor rules), "
+        "query `query_policy_knowledge_base` directly. Do not delegate general policy Q&A to the subagents.\n"
         
-        "3. **IT/Support Tickets:** When a user wants to log an incident or check tickets:\n"
-        "   a. Classify the priority (e.g., Critical priority requests must involve a crash, outage, or system downtime keyword).\n"
-        "   b. Call `get_current_employee_id()` to get the caller's employee ID.\n"
-        "   c. Call `list_tickets(employee_id)` to verify if a ticket in the same category was already created in the last 24 hours (prevent duplication).\n"
-        "   d. If no duplicate exists, call `create_ticket` to open the ticket and return the ticket reference number.\n"
+        "3. **WorkWeek Queries:** For any tasks involving leave balance lookups, submitting vacation/sick requests, "
+        "leave cancellations, or profile address/phone updates, delegate to the `workweek_worker` agent, making sure to include the resolved employee ID.\n"
         
-        "4. **Equipment Procurement (Multi-System Orchestration):** When a user asks to order home office equipment:\n"
-        "   a. Call `query_policy_knowledge_base` to retrieve the eligibility rule (e.g., monitor eligibility).\n"
-        "   b. Call `get_current_employee_id()` to get their employee ID.\n"
-        "   c. Call `get_personal_info(employee_id)` or other profile tool to get the employee's work location type (e.g., 'Remote') and shipping address.\n"
-        "   d. Verify they satisfy the policy rule (work_location_type must be 'Remote').\n"
-        "   e. If eligible, call `create_ticket` on the ServiceImmediately server to place a hardware request item for a monitor, specifying the employee's address for shipment.\n"
+        "4. **ITSM Queries:** For any tasks involving support ticket creation, checking incident lists, adding ticket comments, "
+        "or updating ticket status, delegate to the `itsm_worker` agent, making sure to include the resolved employee ID.\n"
+        
+        "5. **Multi-System Orchestration (e.g. Remote Monitor Procurement):**\n"
+        "   a. Call `query_policy_knowledge_base` to retrieve the eligibility rule (e.g. 'Remote employees eligible for 1x monitor').\n"
+        "   b. Call `resolve_employee_id` to get their active employee ID.\n"
+        "   c. Delegate to the `workweek_worker` agent to fetch their profile details (work location type and home address).\n"
+        "   d. Verify they satisfy the rule (location type must be 'Remote').\n"
+        "   e. If eligible, delegate to the `itsm_worker` agent to create a hardware request ticket, providing the shipping address from their profile.\n"
     ),
-    tools=[query_policy_knowledge_base, workweek_mcp, serviceimmediately_mcp],
+    tools=[query_policy_knowledge_base, resolve_employee_id],
+    sub_agents=[workweek_worker, itsm_worker],
 )
 
 app = App(

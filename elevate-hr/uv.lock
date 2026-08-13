@@ -9,26 +9,23 @@ resolution-markers = [
 
 [[package]]
 name = "a2a-sdk"
-version = "1.1.0"
+version = "0.3.25"
 source = { registry = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/simple/" }
 dependencies = [
-    { name = "culsans" },
     { name = "google-api-core" },
-    { name = "googleapis-common-protos" },
     { name = "httpx" },
     { name = "httpx-sse" },
-    { name = "json-rpc" },
-    { name = "packaging" },
     { name = "protobuf" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/a2a-sdk/a2a_sdk-1.1.0.tar.gz", hash = "sha256:e8102dad1b36709dbdc3d19319e38e6dfa3b3a79c30416030eb2d482576be204" }
+sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/a2a-sdk/a2a_sdk-0.3.25.tar.gz", hash = "sha256:afda85bab8d6af0c5d15e82f326c94190f6be8a901ce562d045a338b7127242f" }
 wheels = [
-    { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/a2a-sdk/a2a_sdk-1.1.0-py3-none-any.whl", hash = "sha256:d7f5846caf18033d8bf3108b11ec827dd8dd32f867c98848ede0e39474be93be" },
+    { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/a2a-sdk/a2a_sdk-0.3.25-py3-none-any.whl", hash = "sha256:2fce38faea82eb0b6f9f9c2bcf761b0d78612c80ef0e599b50d566db1b2654b5" },
 ]
 
 [package.optional-dependencies]
 http-server = [
+    { name = "fastapi" },
     { name = "sse-starlette" },
     { name = "starlette" },
 ]
@@ -85,20 +82,6 @@ wheels = [
     { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/aiohttp/aiohttp-3.14.1-cp311-cp311-win32.whl", hash = "sha256:313701e488100074ce99850404ee36e741abf6330179fec908a1944ecf570126" },
     { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/aiohttp/aiohttp-3.14.1-cp311-cp311-win_amd64.whl", hash = "sha256:03ab4530fdcb3a543a122ba4b65ac9919da9fe9f78a03d328a6e38ff962f7aa5" },
     { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/aiohttp/aiohttp-3.14.1-cp311-cp311-win_arm64.whl", hash = "sha256:486f7d16ed54c39c2cbd7ca71fd8ba2b8bb7860df65bd7b6ed640bab96a38a8b" },
-]
-
-[[package]]
-name = "aiologic"
-version = "0.17.1"
-source = { registry = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/simple/" }
-dependencies = [
-    { name = "sniffio" },
-    { name = "typing-extensions" },
-    { name = "wrapt" },
-]
-sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/aiologic/aiologic-0.17.1.tar.gz", hash = "sha256:2e1b93b9e88ced318c2a63ad7b382688f40cbfe40e3d42258d49dc9c5aea179d" }
-wheels = [
-    { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/aiologic/aiologic-0.17.1-py3-none-any.whl", hash = "sha256:c66b319830fedb7ca3d2b2125fa6f5b653f89418c2a27ea76f259ec5f00943c0" },
 ]
 
 [[package]]
@@ -330,19 +313,6 @@ wheels = [
 ]
 
 [[package]]
-name = "culsans"
-version = "0.11.0"
-source = { registry = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/simple/" }
-dependencies = [
-    { name = "aiologic" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/culsans/culsans-0.11.0.tar.gz", hash = "sha256:0b43d0d05dce6106293d114c86e3fb4bfc63088cfe8ff08ed3fe36891447fe33" }
-wheels = [
-    { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/culsans/culsans-0.11.0-py3-none-any.whl", hash = "sha256:278d118f63fc75b9db11b664b436a1b83cc30d9577127848ba41420e66eb5a47" },
-]
-
-[[package]]
 name = "decorator"
 version = "5.3.1"
 source = { registry = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/simple/" }
@@ -418,7 +388,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "a2a-sdk", extras = ["http-server"], specifier = ">=0.5" },
+    { name = "a2a-sdk", extras = ["http-server"], specifier = ">=0.3.4,<0.4.0" },
     { name = "aiohttp", specifier = ">=3.13.4" },
     { name = "asyncpg", specifier = ">=0.30.0,<1.0.0" },
     { name = "codespell", marker = "extra == 'lint'", specifier = ">=2.2.0,<3.0.0" },
@@ -1394,15 +1364,6 @@ dependencies = [
 sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/joserfc/joserfc-1.7.4.tar.gz", hash = "sha256:b3bc561672ae541b17a9237053b48a03dacddd92d68047b3ecdfb4b5714a88ed" }
 wheels = [
     { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/joserfc/joserfc-1.7.4-py3-none-any.whl", hash = "sha256:32d46c2cd5e3203c13e87a6c61333cab310b1ba80cd54b4c4f386a848a122463" },
-]
-
-[[package]]
-name = "json-rpc"
-version = "1.15.0"
-source = { registry = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/simple/" }
-sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/json-rpc/json-rpc-1.15.0.tar.gz", hash = "sha256:e6441d56c1dcd54241c937d0a2dcd193bdf0bdc539b5316524713f554b7f85b9" }
-wheels = [
-    { url = "https://us-python.pkg.dev/artifact-foundry-prod/python-3p-trusted/json-rpc/json_rpc-1.15.0-py2.py3-none-any.whl", hash = "sha256:4a4668bbbe7116feb4abbd0f54e64a4adcf4b8f648f19ffa0848ad0f6606a9bf" },
 ]
 
 [[package]]

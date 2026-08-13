@@ -12,6 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Monkeypatch circular compatibility issue for TextPart in a2a-sdk 1.1.0 vs ADK 2.3.0
+try:
+    import a2a.types
+    from a2a.compat.v0_3.types import TextPart
+    a2a.types.TextPart = TextPart
+except ImportError:
+    pass
+
 import contextlib
 import os
 from collections.abc import AsyncIterator
