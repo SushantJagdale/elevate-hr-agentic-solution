@@ -1,0 +1,51 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "policy_bereavement_leave",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "What is the company's bereavement leave policy?"}]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [{"text": "Employees are eligible for up to 5 days of paid bereavement leave. [Source: Leave Policy 2026, Section 4.2]"}]
+        }
+      }
+    },
+    {
+      "eval_case_id": "workweek_check_balances",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "How many vacation days do I have remaining in my account?"}]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [{"text": "Your remaining vacation leave balance is 15.0 days."}]
+        }
+      }
+    },
+    {
+      "eval_case_id": "workweek_vacation_request",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "Please submit a vacation request for next Thursday and Friday."}]
+      }
+    },
+    {
+      "eval_case_id": "itsm_vpn_issue",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "Create an IT ticket because my VPN connection keeps dropping."}]
+      }
+    },
+    {
+      "eval_case_id": "procure_home_monitor",
+      "prompt": {
+        "role": "user",
+        "parts": [{"text": "I am eligible for a home office monitor. Can you verify my status and order one for me?"}]
+      }
+    }
+  ]
+}

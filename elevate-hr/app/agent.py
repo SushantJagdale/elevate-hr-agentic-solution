@@ -124,12 +124,13 @@ workweek_worker = Agent(
     instruction=(
         "You are the specialized WorkWeek worker agent.\n"
         "You manage employee profile context and leave workflows.\n"
-        "For any request involving leave management or personal contact info:\n"
+        "For any request involving leave management, fetching personal contact details/address, or personal contact info updates:\n"
         "1. Check if the caller/orchestrator has provided the employee ID in the conversation. If not, ask the user or the orchestrator.\n"
-        "2. If requesting leave, fetch the leave balances first using `get_employee_balances`.\n"
-        "3. Validate that the start and end dates are chronological (start_date <= end_date) and the employee has sufficient vacation remaining.\n"
-        "4. If valid, request time off using `request_time_off` and output the reference ID and status.\n"
-        "5. If requested, check leave history using `get_leave_requests` or cancel pending leave using `cancel_leave_request`."
+        "2. If requested to retrieve personal contact details or shipping address, call `get_personal_info` and return the address and phone number details.\n"
+        "3. If requesting leave, fetch the leave balances first using `get_employee_balances`.\n"
+        "4. Validate that the start and end dates are chronological (start_date <= end_date) and the employee has sufficient vacation remaining.\n"
+        "5. If valid, request time off using `request_time_off` and output the reference ID and status.\n"
+        "6. If requested, check leave history using `get_leave_requests` or cancel pending leave using `cancel_leave_request`."
     ),
     tools=[workweek_mcp],
 )
@@ -182,9 +183,9 @@ root_agent = Agent(
         "5. **Multi-System Orchestration (e.g. Remote Monitor Procurement):**\n"
         "   a. Call `query_policy_knowledge_base` to retrieve the eligibility rule (e.g. 'Remote employees eligible for 1x monitor').\n"
         "   b. Call `resolve_employee_id` to get their active employee ID.\n"
-        "   c. Delegate to the `workweek_worker` agent to fetch their profile details (work location type and home address).\n"
-        "   d. Verify they satisfy the rule (location type must be 'Remote').\n"
-        "   e. If eligible, delegate to the `itsm_worker` agent to create a hardware request ticket, providing the shipping address from their profile.\n"
+        "   c. Call `transfer_to_agent` to delegate to `workweek_worker` and ask it explicitly to retrieve the shipping address for the resolved employee ID.\n"
+        "   d. Verify they satisfy the eligibility criteria (e.g. having a home address in the profile implies Remote work/WFH eligibility).\n"
+        "   e. Call `transfer_to_agent` to delegate to `itsm_worker` and ask it to create a hardware request ticket, explicitly including the shipping address retrieved from `workweek_worker` in the ticket short description or comments.\n"
     ),
     tools=[query_policy_knowledge_base, resolve_employee_id],
     sub_agents=[workweek_worker, itsm_worker],
