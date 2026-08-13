@@ -1,0 +1,24 @@
+# Secrets and environment files
+.env
+*.env
+*.pem
+*.key
+*.token
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# ADK CLI & Server local state
+.google-agents-cli/
+.adk/
+*.db
+*.sqlite
+
+# Evaluation outputs & scratch artifacts
+artifacts/
+scratch/

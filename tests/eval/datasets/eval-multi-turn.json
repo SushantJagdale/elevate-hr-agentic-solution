@@ -1,0 +1,75 @@
+[
+  {
+    "case_id": "multi_turn_leave_submission_001",
+    "turns": [
+      {
+        "role": "user",
+        "content": "I would like to submit a request for 5 days of vacation leave starting next Monday."
+      },
+      {
+        "role": "model",
+        "content": "I can help you submit a vacation leave request in WorkWeek. Could you please confirm your employee ID and the start and end dates?"
+      },
+      {
+        "role": "user",
+        "content": "My employee ID is EMP-94820, start date 2026-08-17, end date 2026-08-21."
+      },
+      {
+        "role": "model",
+        "content": "Thank you! I have submitted your 5-day vacation leave request (ID: LR-2026-8839) to WorkWeek HCM. It has been routed to your manager for approval."
+      }
+    ],
+    "expected_tools": [
+      "workweek_hcm_get_employee",
+      "workweek_hcm_submit_leave_request"
+    ]
+  },
+  {
+    "case_id": "multi_turn_itsm_ticket_002",
+    "turns": [
+      {
+        "role": "user",
+        "content": "My laptop screen is cracked and I need an IT replacement ticket opened under ergonomic/medical accommodation."
+      },
+      {
+        "role": "model",
+        "content": "I can create an IT incident ticket in ServiceNow for your cracked screen. Please confirm your department name and asset tag or serial number."
+      },
+      {
+        "role": "user",
+        "content": "Department is Engineering and asset tag is MBP-2024-X9."
+      },
+      {
+        "role": "model",
+        "content": "Ticket INC-773910 has been created in ServiceNow under category 'HRSD / Employee Relations' assigned to HR-Tier2-Ops with Priority 3 - Moderate."
+      }
+    ],
+    "expected_tools": [
+      "servicenow_create_incident"
+    ]
+  },
+  {
+    "case_id": "multi_turn_address_update_003",
+    "turns": [
+      {
+        "role": "user",
+        "content": "I recently moved and need to update my mailing address in the HR system."
+      },
+      {
+        "role": "model",
+        "content": "I can assist with updating your personal profile address in WorkWeek. Please provide your new street address, city, state, and postal code."
+      },
+      {
+        "role": "user",
+        "content": "New Address: 742 Evergreen Terrace, Springfield, OR 97477."
+      },
+      {
+        "role": "model",
+        "content": "Your address update request has been successfully submitted to WorkWeek HCM. A confirmation receipt has been sent to your primary work email."
+      }
+    ],
+    "expected_tools": [
+      "workweek_hcm_update_profile"
+    ]
+  }
+]

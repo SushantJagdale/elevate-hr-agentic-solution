@@ -1,0 +1,7 @@
+schema_version: "1.0"
+name: app
+display_name: Enterprise HR Agentic Virtual Assistant
+description: Enterprise GenAI HR & ITSM Agentic Assistant powered by Google Agent Development Kit (ADK) on GCP Cloud Run
+agent_framework: google-adk
+entrypoint: app.agent:root_agent
+region: global
