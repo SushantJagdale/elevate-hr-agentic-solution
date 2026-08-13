@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Altostrat Enterprise Assistant</title>
+    <!-- Tailwind CSS CDN with configuration -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    borderRadius: {
+                        '4xl': '2rem'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .chat-bubble-user {
+            border-bottom-right-radius: 4px;
+        }
+        .chat-bubble-assistant {
+            border-bottom-left-radius: 4px;
+        }
+        .chat-bubble-assistant p {
+            margin-bottom: 0.75rem;
+        }
+        .chat-bubble-assistant p:last-child {
+            margin-bottom: 0;
+        }
+        .chat-bubble-assistant ul {
+            list-style-type: disc;
+            margin-left: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .chat-bubble-assistant ol {
+            list-style-type: decimal;
+            margin-left: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .chat-bubble-assistant li {
+            margin-bottom: 0.25rem;
+        }
+        .chat-bubble-assistant strong {
+            font-weight: 700;
+        }
+        .chat-bubble-assistant a {
+            color: #4f46e5;
+            text-decoration: underline;
+        }
+        .dark .chat-bubble-assistant a {
+            color: #818cf8;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 h-screen flex flex-col overflow-hidden transition-colors duration-200">
+
+    <!-- Navbar -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0 shadow-sm z-10">
+        <div class="flex items-center space-x-3.5">
+            <!-- Sparkle Avatar Logo -->
+            <div class="bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 text-white p-2.5 rounded-xl flex items-center justify-center shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5" viewBox="0 0 16 16">
+                    <path d="M7.657 6.243L6 11 4.343 6.243 0 4.5l4.343-1.743L6 0l1.657 2.757L12 4.5l-4.343 1.743z"/>
+                    <path d="M13.657 11.243L12 16l-1.657-4.757L6 9.5l4.343-1.743L12 3l1.657 4.757L18 9.5l-4.343 1.743z" opacity="0.7"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="font-bold text-base md:text-lg leading-tight text-slate-900 dark:text-white">Altostrat Enterprise Assistant</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">HR Self-Service (WorkWeek) & IT Support (ServiceImmediately)</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <!-- Theme Toggle Button -->
+            <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition duration-150" title="Toggle dark/light mode">
+                <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
+            </button>
+            
+            <div class="hidden sm:flex flex-col text-right text-xs">
+                <span id="user-display" class="font-mono text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-850 px-2 py-1 rounded">User: ...</span>
+                <span id="session-display" class="font-mono text-slate-500 dark:text-slate-400 mt-1">Session: ...</span>
+            </div>
+            
+            <button onclick="resetSession()" class="flex items-center space-x-1.5 px-3.5 py-2.5 bg-indigo-55 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 active:scale-95 rounded-xl text-sm font-medium transition duration-150 shadow-sm border border-indigo-100 dark:border-indigo-900/20">
+                <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
+                <span>New Session</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left: Chat Panel -->
+        <main class="flex-1 flex flex-col bg-slate-50/50 dark:bg-slate-950 overflow-hidden border-r border-slate-200 dark:border-slate-850">
+            <!-- Messages Container -->
+            <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- Welcome Message -->
+                <div class="flex items-start space-x-3.5 max-w-3xl">
+                    <div class="bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-4 h-4" viewBox="0 0 16 16">
+                            <path d="M7.657 6.243L6 11 4.343 6.243 0 4.5l4.343-1.743L6 0l1.657 2.757L12 4.5l-4.343 1.743z"/>
+                            <path d="M13.657 11.243L12 16l-1.657-4.757L6 9.5l4.343-1.743L12 3l1.657 4.757L18 9.5l-4.343 1.743z" opacity="0.7"/>
+                        </svg>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 chat-bubble-assistant rounded-3xl rounded-tl-none px-5 py-4 shadow-sm text-slate-700 dark:text-slate-300 max-w-full leading-relaxed">
+                        <p class="font-bold text-slate-850 dark:text-white mb-1.5">Hello! I am your Altostrat Assistant.</p>
+                        <p class="text-sm">I can help you coordinate HR tasks like leave requests and contact details (WorkWeek), as well as IT tickets and support incidents (ServiceImmediately).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Input Area -->
+            <div class="max-w-3xl mx-auto w-full px-4 mb-4 shrink-0 z-10">
+                <!-- Suggestions row -->
+                <div id="suggestions-row" class="flex flex-wrap gap-2 mb-3 justify-center">
+                    <button onclick="useSuggestion('What is the bereavement leave policy?')" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
+                        What is the bereavement leave policy?
+                    </button>
+                    <button onclick="useSuggestion('I want to request vacation from 2026-10-10 to 2026-10-15')" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
+                        Request vacation
+                    </button>
+                    <button onclick="useSuggestion('Create a critical IT ticket because the production login system is down.')" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
+                        Create IT Ticket
+                    </button>
+                </div>
+                <!-- Chat input card -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-xl">
+                    <form id="chat-form" onsubmit="handleFormSubmit(event)" class="flex flex-col">
+                        <textarea 
+                            id="user-input" 
+                            rows="2"
+                            placeholder="Ask, write or search for anything..." 
+                            class="w-full bg-transparent resize-none border-none outline-none focus:ring-0 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm leading-relaxed"
+                            required
+                        ></textarea>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <button type="button" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition">
+                                <i class="fa-solid fa-globe text-base"></i>
+                            </button>
+                            <button 
+                                type="submit" 
+                                id="send-button"
+                                class="w-9 h-9 rounded-full bg-slate-950 dark:bg-slate-100 text-white dark:text-slate-950 flex items-center justify-center hover:bg-slate-800 dark:hover:bg-slate-200 active:scale-95 transition"
+                            >
+                                <i class="fa-solid fa-arrow-right text-sm"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right: Thought Process Panel -->
+        <aside class="hidden lg:flex w-96 flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-hidden shrink-0">
+            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check text-slate-600 dark:text-slate-300"></i>
+                    <h2 class="font-semibold text-slate-800 dark:text-white text-sm">Execution Logs</h2>
+                </div>
+                <button onclick="clearLogs()" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                    Clear
+                </button>
+            </div>
+            
+            <div id="execution-logs" class="flex-1 overflow-y-auto p-5 space-y-4 font-mono text-[11px] bg-slate-50/50 dark:bg-slate-900/30">
+                <div class="text-slate-400 dark:text-slate-500 italic">No actions recorded yet. Inquire or submit a request to see agent routing and tool execution.</div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        const API_BASE = window.location.origin;
+        let userId = localStorage.getItem('chatbot_user_id');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substring(2, 11);
+            localStorage.setItem('chatbot_user_id', userId);
+        }
+
+        let sessionId = localStorage.getItem('chatbot_session_id');
+        let currentPrompt = '';
+
+        // Dark Mode toggler
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeUI();
+        }
+
+        function updateThemeUI() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const icon = document.getElementById('theme-toggle-icon');
+            if (isDark) {
+                icon.className = 'fa-solid fa-sun text-amber-400 text-sm';
+            } else {
+                icon.className = 'fa-solid fa-moon text-slate-600 dark:text-slate-300 text-sm';
+            }
+        }
+
+        // Apply saved theme on boot
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+        updateThemeUI();
+
+        // Initial configuration
+        document.addEventListener('DOMContentLoaded', () => {
+            initSession();
+            
+            // Enter key submits text box
+            document.getElementById('user-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('chat-form').dispatchEvent(new Event('submit', { cancelable: true }));
+                }
+            });
+        });
+
+        // Initialize user session
+        async function initSession() {
+            try {
+                if (!sessionId) {
+                    const response = await fetch(`${API_BASE}/apps/app/users/${userId}/sessions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ state: { preferred_language: 'English', initialized_at: new Date().toISOString() } })
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        sessionId = data.id;
+                        localStorage.setItem('chatbot_session_id', sessionId);
+                    } else {
+                        throw new Error('Failed to create session on server');
+                    }
+                }
+                
+                document.getElementById('user-display').innerText = `User: ${userId}`;
+                document.getElementById('session-display').innerText = `Session: ${sessionId.substring(0, 8)}...`;
+            } catch (err) {
+                console.error(err);
+                addSystemNotification("System configuration error: Unable to start agent session.", "error");
+            }
+        }
+
+        // Reset user session
+        async function resetSession() {
+            sessionId = null;
+            localStorage.removeItem('chatbot_session_id');
+            
+            // Clear UI elements
+            const msgContainer = document.getElementById('messages-container');
+            msgContainer.innerHTML = `
+                <div class="flex items-start space-x-3.5 max-w-3xl">
+                    <div class="bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-4 h-4" viewBox="0 0 16 16">
+                            <path d="M7.657 6.243L6 11 4.343 6.243 0 4.5l4.343-1.743L6 0l1.657 2.757L12 4.5l-4.343 1.743z"/>
+                            <path d="M13.657 11.243L12 16l-1.657-4.757L6 9.5l4.343-1.743L12 3l1.657 4.757L18 9.5l-4.343 1.743z" opacity="0.7"/>
+                        </svg>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 chat-bubble-assistant rounded-3xl rounded-tl-none px-5 py-4 shadow-sm text-sm text-slate-700 dark:text-slate-350 max-w-full leading-relaxed">
+                        <p class="font-bold text-slate-850 dark:text-white mb-1.5">New session started!</p>
+                        <p class="text-sm">How can I assist you with Altostrat's HRMS and ITSM tools today?</p>
+                    </div>
+                </div>
+            `;
+            
+            clearLogs();
+            await initSession();
+        }
+
+        // Suggestion Pill Clicker
+        function useSuggestion(text) {
+            document.getElementById('user-input').value = text;
+            document.getElementById('chat-form').dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+
+        // Clear execution log pane
+        function clearLogs() {
+            document.getElementById('execution-logs').innerHTML = `
+                <div class="text-slate-400 dark:text-slate-500 italic">No actions recorded yet. Inquire or submit a request to see agent routing and tool execution.</div>
+            `;
+        }
+
+        // Add a notification directly into the message container
+        function addSystemNotification(text, type = "info") {
+            const container = document.getElementById('messages-container');
+            const alertColor = type === "error" ? "bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900/50" : "bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-900/50";
+            const icon = type === "error" ? "fa-solid fa-triangle-exclamation" : "fa-solid fa-info";
+            
+            container.innerHTML += `
+                <div class="flex items-center space-x-3 p-4 rounded-2xl border ${alertColor} max-w-3xl shadow-sm text-sm">
+                    <i class="${icon}"></i>
+                    <span>${text}</span>
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Handle sending message
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            const inputElement = document.getElementById('user-input');
+            const text = inputElement.value.trim();
+            if (!text) return;
+
+            inputElement.value = '';
+            
+            if (!sessionId) {
+                await initSession();
+            }
+
+            // Append user text to chat
+            appendUserMessage(text);
+
+            // Append assistant loading block
+            const assistantBubble = appendAssistantMessagePlaceholder();
+            
+            // Log starter
+            const logContainer = document.getElementById('execution-logs');
+            // If logs has the default text, replace it
+            if (logContainer.querySelector('.italic')) {
+                logContainer.innerHTML = '';
+            }
+            logContainer.innerHTML += `
+                <div class="border-l-2 border-indigo-400 dark:border-indigo-650 pl-2 py-1.5 my-2">
+                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">🚀 USER PROMPT:</span>
+                    <span class="text-slate-700 dark:text-slate-350">${text}</span>
+                </div>
+            `;
+            logContainer.scrollTop = logContainer.scrollHeight;
+
+            // Call backend SSE API
+            try {
+                const response = await fetch(`${API_BASE}/run_sse`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        app_name: 'app',
+                        user_id: userId,
+                        session_id: sessionId,
+                        new_message: {
+                            role: 'user',
+                            parts: [{ text: text }]
+                        },
+                        streaming: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned status code ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                
+                // Remove placeholder pulse animation and text once streaming starts
+                let startedStreaming = false;
+                let hasStreamedText = false;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed) continue;
+                        if (trimmed.startsWith('data: ')) {
+                            const rawJson = trimmed.slice(6);
+                            try {
+                                const eventObj = JSON.parse(rawJson);
+                                
+                                if (!startedStreaming) {
+                                    assistantBubble.innerHTML = '';
+                                    assistantBubble.classList.remove('italic', 'text-slate-400', 'dark:text-slate-500', 'animate-pulse', 'flex', 'items-center');
+                                    assistantBubble.dataset.rawText = '';
+                                    startedStreaming = true;
+                                }
+                                
+                                hasStreamedText = processSseEvent(eventObj, assistantBubble, hasStreamedText);
+                            } catch (e) {
+                                console.error('Error parsing SSE event:', e, rawJson);
+                            }
+                        }
+                    }
+                }
+                
+                // Once stream finishes, analyze text to render dynamic HRMS/ITSM action cards if applicable
+                parseResultForDynamicCards(assistantBubble);
+
+            } catch (error) {
+                console.error(error);
+                assistantBubble.innerHTML = `
+                    <span class="text-red-650 dark:text-red-400 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1.5"></i>Error communicating with agent: ${error.message}
+                    </span>
+                `;
+            }
+        }
+
+        // Helper to extract response content strings safely
+        function getResponseBodyString(responseObj) {
+            if (!responseObj) return '';
+            if (typeof responseObj.result === 'string') return responseObj.result;
+            if (responseObj.structuredContent && typeof responseObj.structuredContent.result === 'string') {
+                return responseObj.structuredContent.result;
+            }
+            if (Array.isArray(responseObj.content)) {
+                return responseObj.content.map(c => c.text || '').join('\n');
+            }
+            return JSON.stringify(responseObj);
+        }
+
+        // Process SSE payload events
+        function processSseEvent(event, assistantBubble, hasStreamedText) {
+            const author = event.author || 'system';
+            const parts = event.content?.parts || [];
+            const actions = event.actions || {};
+            const isPartial = event.partial !== false;
+            const logContainer = document.getElementById('execution-logs');
+
+            // Parse message text chunks
+            let textChunks = '';
+            for (const part of parts) {
+                if (part.text) {
+                    textChunks += part.text;
+                }
+                
+                // Log tool calls
+                if (part.functionCall) {
+                    const fCall = part.functionCall;
+                    const argsStr = JSON.stringify(fCall.args);
+                    logContainer.innerHTML += `
+                        <div class="text-slate-600 dark:text-slate-400 mt-2 pl-2 border-l border-amber-300 dark:border-amber-700">
+                            <span class="text-amber-600 dark:text-amber-500 font-semibold">[${author}]</span> 🔧 Tool Call: 
+                            <span class="text-slate-800 dark:text-slate-300 font-bold">${fCall.name}</span>(${argsStr})
+                        </div>
+                    `;
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+
+                // Log tool responses
+                if (part.functionResponse) {
+                    const fResp = part.functionResponse;
+                    const respStr = getResponseBodyString(fResp.response);
+                    logContainer.innerHTML += `
+                        <div class="text-slate-600 dark:text-slate-400 mt-1 pl-2 border-l border-emerald-400 dark:border-emerald-700">
+                            <span class="text-emerald-600 dark:text-emerald-500 font-semibold">[${author}]</span> ✅ Tool Response for 
+                            <span class="text-slate-800 dark:text-slate-300 font-semibold">${fResp.name}</span>:
+                            <div class="bg-slate-100 dark:bg-slate-850 p-1.5 rounded mt-0.5 text-[10px] text-slate-700 dark:text-slate-350 whitespace-pre-wrap">${respStr}</div>
+                        </div>
+                    `;
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            }
+
+            if (textChunks) {
+                // If this is a streaming chunk (partial: true), or we have not streamed any text yet, append it.
+                if (isPartial || !hasStreamedText) {
+                    const currentRawText = (assistantBubble.dataset.rawText || '') + textChunks;
+                    assistantBubble.dataset.rawText = currentRawText;
+                    assistantBubble.innerHTML = marked.parse(currentRawText);
+                    
+                    const messagesWrap = document.getElementById('messages-container');
+                    messagesWrap.scrollTop = messagesWrap.scrollHeight;
+                    if (isPartial) {
+                        hasStreamedText = true;
+                    }
+                }
+            }
+
+            // Log routing / subagent delegation actions
+            if (actions.transferToAgent) {
+                logContainer.innerHTML += `
+                    <div class="text-slate-500 dark:text-slate-400 mt-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-150 dark:border-indigo-900/30 p-2 rounded">
+                        <i class="fa-solid fa-route mr-1 text-indigo-500 dark:text-indigo-400"></i>
+                        <span class="font-bold text-indigo-700 dark:text-indigo-400">[${author}]</span> delegates query to 
+                        <span class="font-bold text-indigo-900 dark:text-indigo-350">${actions.transferToAgent}</span>
+                    </div>
+                `;
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+
+            return hasStreamedText;
+        }
+
+        // Parses the final text response inside the bubble to append visual Cards for approval or tickets
+        function parseResultForDynamicCards(bubble) {
+            const rawHtml = bubble.innerHTML;
+            
+            // Check for Vacation Approval
+            if (rawHtml.includes("Approved") && rawHtml.includes("Vacation")) {
+                const matchDates = rawHtml.match(/\d{4}-\d{2}-\d{2}/g);
+                const start = matchDates ? matchDates[0] : "N/A";
+                const end = matchDates && matchDates[1] ? matchDates[1] : "N/A";
+                
+                bubble.innerHTML += `
+                    <div class="mt-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm max-w-sm flex items-center space-x-4">
+                        <div class="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 w-11 h-11 rounded-full flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-calendar-check text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-sm">Vacation Approved</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Dates: ${start} to ${end}</p>
+                            <span class="inline-block mt-1.5 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold rounded-md uppercase tracking-wider">Altostrat HRMS</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Check for IT Incident ticket creation
+            if (rawHtml.includes("INC-") || rawHtml.includes("ticket") && rawHtml.includes("created")) {
+                const incNumber = rawHtml.match(/INC-\d+/i) ? rawHtml.match(/INC-\d+/i)[0].toUpperCase() : "INC-NEW";
+                
+                bubble.innerHTML += `
+                    <div class="mt-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm max-w-sm flex items-center space-x-4">
+                        <div class="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 w-11 h-11 rounded-full flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-ticket text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-sm">Support Ticket Created</h4>
+                            <p class="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">Ticket ID: ${incNumber}</p>
+                            <span class="inline-block mt-1.5 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold rounded-md uppercase tracking-wider">ServiceImmediately</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Add user bubble to chat window
+        function appendUserMessage(text) {
+            const container = document.getElementById('messages-container');
+            container.innerHTML += `
+                <div class="flex items-start space-x-3.5 max-w-3xl ml-auto justify-end">
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white chat-bubble-user rounded-3xl rounded-tr-none px-5.5 py-3.5 shadow-md text-sm leading-relaxed">
+                        ${text}
+                    </div>
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Add empty assistant bubble with loading text
+        function appendAssistantMessagePlaceholder() {
+            const container = document.getElementById('messages-container');
+            const bubbleId = 'bubble-' + Date.now();
+            
+            container.innerHTML += `
+                <div class="flex items-start space-x-3.5 max-w-3xl">
+                    <div class="bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-4 h-4" viewBox="0 0 16 16">
+                            <path d="M7.657 6.243L6 11 4.343 6.243 0 4.5l4.343-1.743L6 0l1.657 2.757L12 4.5l-4.343 1.743z"/>
+                            <path d="M13.657 11.243L12 16l-1.657-4.757L6 9.5l4.343-1.743L12 3l1.657 4.757L18 9.5l-4.343 1.743z" opacity="0.7"/>
+                        </svg>
+                    </div>
+                    <div id="${bubbleId}" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 chat-bubble-assistant rounded-3xl rounded-tl-none px-5 py-4 shadow-sm text-sm text-slate-400 dark:text-slate-500 italic max-w-full leading-relaxed animate-pulse flex items-center">
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>Analyzing data, please wait...
+                    </div>
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
+            return document.getElementById(bubbleId);
+        }
+    </script>
+</body>
+</html>

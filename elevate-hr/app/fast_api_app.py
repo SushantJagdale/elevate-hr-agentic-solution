@@ -28,6 +28,7 @@ import google.auth
 from a2a.server.tasks import InMemoryTaskStore
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from google.adk.cli.fast_api import get_fast_api_app
 from google.adk.runners import Runner
 from google.cloud import logging as google_cloud_logging
@@ -95,6 +96,16 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     """
     logger.log_struct(feedback.model_dump(), severity="INFO")
     return {"status": "success"}
+
+
+@app.get("/chatbot", response_class=HTMLResponse)
+def get_chatbot() -> HTMLResponse:
+    """Serve the chatbot HTML page."""
+    template_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "templates", "index.html"
+    )
+    with open(template_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 
 # Main execution

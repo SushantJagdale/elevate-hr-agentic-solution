@@ -27,13 +27,13 @@ from typing import Any
 import httpx
 import pytest
 import requests
-from a2a.client import ClientConfig, create_client
+from a2a.client import ClientConfig, ClientFactory
 from a2a.types import (
     Message,
     Part,
     Role,
     SendMessageRequest,
-    StreamResponse,
+    Task,
     TaskState,
 )
 from requests.exceptions import RequestException
@@ -176,30 +176,33 @@ def test_a2a_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
     """Test the A2A route using the JSON-RPC streaming protocol."""
     logger.info("Starting A2A chat stream test")
 
-    async def _stream() -> list[StreamResponse]:
+    async def _stream() -> list[Any]:
         config = ClientConfig(
             streaming=True,
             httpx_client=httpx.AsyncClient(timeout=60.0),
         )
-        client = await create_client(A2A_RPC_URL.rstrip("/"), config)
+        client = await ClientFactory.connect(A2A_RPC_URL.rstrip("/"), config)
         message = Message(
             message_id=f"msg-user-{uuid.uuid4()}",
-            role=Role.ROLE_USER,
+            role=Role.user,
             parts=[Part(text="Hi!")],
         )
         return [
             chunk
-            async for chunk in client.send_message(SendMessageRequest(message=message))
+            async for chunk in client.send_message(message)
         ]
 
     responses = asyncio.run(_stream())
     assert responses, "No responses received from stream"
 
-    def _is_completed(chunk: StreamResponse) -> bool:
-        if chunk.HasField("status_update"):
-            return chunk.status_update.status.state == TaskState.TASK_STATE_COMPLETED
-        if chunk.HasField("task"):
-            return chunk.task.status.state == TaskState.TASK_STATE_COMPLETED
+    def _is_completed(chunk: Any) -> bool:
+        if isinstance(chunk, tuple) and len(chunk) > 0:
+            item = chunk[0]
+        else:
+            item = chunk
+
+        if isinstance(item, Task):
+            return item.status.state == TaskState.completed
         return False
 
     assert any(_is_completed(chunk) for chunk in responses), (
@@ -213,16 +216,19 @@ def test_agent_card(server_fixture: subprocess.Popen[str]) -> None:
     assert response.status_code == 200, f"A2A endpoint returned {response.status_code}"
 
     served_agent_card = response.json()
-    # supportedInterfaces is the A2A 1.0 marker (replaces url/preferredTransport).
+    # supportedInterfaces is the A2A 1.0 marker; additionalInterfaces is used in 0.3.
     for field in (
         "name",
         "description",
         "skills",
         "capabilities",
         "version",
-        "supportedInterfaces",
     ):
         assert field in served_agent_card, f"Missing field in agent card: {field}"
+    assert (
+        "supportedInterfaces" in served_agent_card 
+        or "additionalInterfaces" in served_agent_card
+    ), "Missing interface definition field in agent card"
 
 
 def test_collect_feedback(server_fixture: subprocess.Popen[str]) -> None:
@@ -237,3 +243,11 @@ def test_collect_feedback(server_fixture: subprocess.Popen[str]) -> None:
         FEEDBACK_URL, json=feedback_data, headers=HEADERS, timeout=10
     )
     assert response.status_code == 200
+
+
+def test_chatbot_page(server_fixture: subprocess.Popen[str]) -> None:
+    """Test that the chatbot HTML page is served correctly."""
+    response = requests.get(f"{BASE_URL}/chatbot", timeout=10)
+    assert response.status_code == 200
+    assert "<title>Altostrat Enterprise Assistant</title>" in response.text
+

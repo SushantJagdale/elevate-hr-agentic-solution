@@ -86,7 +86,7 @@ async def _add_v0_3_compat_interface(card: AgentCard) -> AgentCard:
     """Advertise a v0.3 JSON-RPC interface so the served card stays consumable by
     v0.3 A2A clients — notably Gemini Enterprise registration, whose validator
     still requires the 0.3 card shape (top-level ``url``/``protocolVersion``)."""
-    if card.supported_interfaces:
+    if hasattr(card, "supported_interfaces") and card.supported_interfaces:
         card.supported_interfaces.append(
             AgentInterface(
                 protocol_binding="JSONRPC",
@@ -94,6 +94,16 @@ async def _add_v0_3_compat_interface(card: AgentCard) -> AgentCard:
                 url=card.supported_interfaces[0].url,
             )
         )
+    elif hasattr(card, "additional_interfaces"):
+        if card.additional_interfaces is None:
+            card.additional_interfaces = []
+        if not any(i.transport == "JSONRPC" for i in card.additional_interfaces):
+            card.additional_interfaces.append(
+                AgentInterface(
+                    transport="JSONRPC",
+                    url=card.url,
+                )
+            )
     return card
 
 
