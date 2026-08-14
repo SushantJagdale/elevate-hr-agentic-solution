@@ -24,6 +24,10 @@ locals {
     "logging.googleapis.com",
     "cloudtrace.googleapis.com",
     "telemetry.googleapis.com",
+    "secretmanager.googleapis.com",
+    "firestore.googleapis.com",
+    "compute.googleapis.com",
+    "vpcaccess.googleapis.com",
   ]
 }
 

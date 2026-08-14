@@ -47,6 +47,16 @@ resource "google_cloud_run_v2_service" "app" {
         value = "True"
       }
 
+      env {
+        name  = "SESSION_SERVICE_URI"
+        value = "firestore://${var.project_id}"
+      }
+
+      env {
+        name  = "REDEPLOY_TRIGGER"
+        value = "1"
+      }
+
       resources {
         limits = {
           cpu    = "1"
@@ -104,6 +114,14 @@ resource "google_cloud_run_v2_service" "app" {
     }
 
     session_affinity = true
+
+    vpc_access {
+      network_interfaces {
+        network    = google_compute_network.vpc.id
+        subnetwork = google_compute_subnetwork.subnet.id
+      }
+      egress = "PRIVATE_RANGES_ONLY"
+    }
   }
 
   traffic {

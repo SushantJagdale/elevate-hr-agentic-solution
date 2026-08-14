@@ -40,6 +40,12 @@ _AGENT_DIR = os.path.dirname(
 def get_session_service():
     """Process-wide session service shared across every serving surface."""
     if uri := os.environ.get("SESSION_SERVICE_URI"):
+        if uri.startswith("firestore://"):
+            from google.cloud import firestore
+            from google.adk.integrations.firestore.firestore_session_service import FirestoreSessionService
+            project_id = uri.replace("firestore://", "").strip()
+            client = firestore.AsyncClient(project=project_id) if project_id else None
+            return FirestoreSessionService(client=client)
         return create_session_service_from_options(
             base_dir=_AGENT_DIR, session_service_uri=uri
         )
