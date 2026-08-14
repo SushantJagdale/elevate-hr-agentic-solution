@@ -6,7 +6,7 @@
     "output": "hr_architecture.html",
     "visual_preset": "blueprint",
     "animation": "trace",
-    "quality_profile": "standard",
+    "quality_profile": "showcase",
     "engineering_profile": "deployment-ownership",
     "views": [
       {
@@ -17,21 +17,21 @@
       },
       {
         "id": "agent-core",
-        "label": "ADK Root Agent Core",
-        "focus": ["frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules"],
-        "note": "Serverless Cloud Run runtime executing ADK Root Agent, Secret Manager credentials, and rule guardrails."
+        "label": "ADK Root & Subagent Core",
+        "focus": ["frontend", "safety_guardrail", "adk_root_agent", "workweek_agent", "service_agent", "secret_manager", "business_rules"],
+        "note": "Serverless Cloud Run runtime executing ADK Root Agent, specialized subagents, credentials, and rule guardrails."
       },
       {
         "id": "persistence-rag",
-        "label": "Firestore Persistence & RAG",
-        "focus": ["adk_root_agent", "firestore", "document_ai"],
-        "note": "Serverless Firestore storing session state and 768-dim HNSW policy vector embeddings."
+        "label": "Embeddings & Firestore RAG",
+        "focus": ["adk_root_agent", "vertex_embeddings", "firestore"],
+        "note": "Root Agent sends user prompt to Vertex AI Embeddings, queries Firestore HNSW vector index, and receives policy context chunks."
       },
       {
         "id": "saas-integration",
         "label": "Enterprise Integration & Audit",
-        "focus": ["adk_root_agent", "workweek_hcm", "service_immediately", "bigquery_worm"],
-        "note": "Downstream SaaS MCP tool invocation with immutable BigQuery audit logging."
+        "focus": ["adk_root_agent", "workweek_agent", "service_agent", "workweek_hcm", "service_immediately", "bigquery"],
+        "note": "ADK Root Agent delegates tasks to WorkWeek and ServiceImmediately agents, which execute SaaS APIs with BigQuery audit logging."
       }
     ]
   },
@@ -41,18 +41,21 @@
     { "id": "iap_proxy", "type": "security", "label": "Identity-Aware Proxy", "sublabel": "IAP OIDC Authentication", "pos": [420, 300], "size": [145, 60], "tag": "Zero-Trust Auth" },
     { "id": "frontend", "type": "backend", "label": "Cloud Run Frontend", "sublabel": "FastAPI Web Service", "pos": [620, 180], "size": [140, 60], "tag": "Application Core" },
     { "id": "safety_guardrail", "type": "security", "label": "Safety Interceptor", "sublabel": "Cloud DLP & Input Filter", "pos": [620, 420], "size": [140, 60], "tag": "Safety Firewall" },
-    { "id": "adk_root_agent", "type": "backend", "label": "Google ADK Root Agent", "sublabel": "GCP Cloud Run Orchestrator", "pos": [830, 300], "size": [150, 65], "tag": "Agentic Runtime" },
+    { "id": "adk_root_agent", "type": "backend", "label": "Google ADK Root Agent", "sublabel": "GCP Cloud Run Orchestrator", "pos": [830, 300], "size": [150, 65], "tag": "Root Orchestrator" },
     { "id": "secret_manager", "type": "security", "label": "Secret Manager", "sublabel": "Credential Manager", "pos": [830, 110], "size": [150, 60], "tag": "Key Management" },
     { "id": "business_rules", "type": "backend", "label": "Business Rule Guards", "sublabel": "Deterministic Python Rules", "pos": [830, 490], "size": [150, 60], "tag": "Policy Guards" },
-    { "id": "firestore", "type": "database", "label": "Firebase Firestore", "sublabel": "Session State & Vectors", "pos": [1070, 110], "size": [150, 65], "tag": "Serverless Storage" },
-    { "id": "document_ai", "type": "cloud", "label": "Document AI & Embeddings", "sublabel": "text-embedding-004 (768d)", "pos": [1280, 110], "size": [175, 65], "tag": "Vector Ingestion" },
-    { "id": "workweek_hcm", "type": "external", "label": "WorkWeek HCM", "sublabel": "HCM REST API", "pos": [1070, 270], "size": [150, 60], "tag": "Enterprise SaaS" },
-    { "id": "service_immediately", "type": "external", "label": "ServiceImmediately ITSM", "sublabel": "ITSM API", "pos": [1070, 410], "size": [150, 60], "tag": "Enterprise SaaS" },
-    { "id": "bigquery_worm", "type": "database", "label": "BigQuery", "sublabel": "Immutable Audit Logs", "pos": [1280, 490], "size": [155, 65], "tag": "Compliance Audit" }
+    { "id": "vertex_embeddings", "type": "cloud", "label": "Embeddings API", "sublabel": "Vertex AI text-embedding-004", "pos": [1140, 110], "size": [165, 65], "tag": "Vector Generation" },
+    { "id": "workweek_agent", "type": "backend", "label": "WorkWeek Agent", "sublabel": "HCM Specialized Subagent", "pos": [1140, 250], "size": [155, 60], "tag": "ADK Subagent" },
+    { "id": "service_agent", "type": "backend", "label": "ServiceImmediately Agent", "sublabel": "ITSM Specialized Subagent", "pos": [1140, 370], "size": [155, 60], "tag": "ADK Subagent" },
+    { "id": "bigquery", "type": "database", "label": "Google BigQuery", "sublabel": "Audit & Analytics Logs", "pos": [1140, 490], "size": [155, 65], "tag": "Audit Logging" },
+    { "id": "firestore", "type": "database", "label": "Firebase Firestore", "sublabel": "HNSW Vector Index & State", "pos": [1390, 110], "size": [165, 65], "tag": "Serverless Storage" },
+    { "id": "workweek_hcm", "type": "external", "label": "WorkWeek HCM", "sublabel": "HCM REST API", "pos": [1390, 250], "size": [150, 60], "tag": "Enterprise SaaS" },
+    { "id": "service_immediately", "type": "external", "label": "ServiceImmediately ITSM", "sublabel": "ITSM API", "pos": [1390, 370], "size": [150, 60], "tag": "Enterprise SaaS" }
   ],
   "boundaries": [
-    { "kind": "region", "label": "GCP Cloud & External Services Topology", "wraps": ["cloud_armor", "iap_proxy", "frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "firestore", "document_ai", "workweek_hcm", "service_immediately", "bigquery_worm"] },
-    { "kind": "security-group", "label": "VPC Service Controls (VPC-SC) Secure Boundary", "wraps": ["frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "firestore", "bigquery_worm"] },
+    { "kind": "region", "label": "GCP Cloud & External Services Topology", "wraps": ["cloud_armor", "iap_proxy", "frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "vertex_embeddings", "workweek_agent", "service_agent", "bigquery", "firestore", "workweek_hcm", "service_immediately"] },
+    { "kind": "security-group", "label": "VPC Service Controls (VPC-SC) Secure Boundary", "wraps": ["frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "vertex_embeddings", "workweek_agent", "service_agent", "bigquery", "firestore"] },
+    { "kind": "security-group", "label": "ADK Agent Orchestration Boundary", "wraps": ["adk_root_agent", "workweek_agent", "service_agent"] },
     { "kind": "security-group", "label": "Enterprise SaaS External Integration Boundary", "wraps": ["workweek_hcm", "service_immediately"] }
   ],
   "connections": [
@@ -63,15 +66,17 @@
     { "from": "safety_guardrail", "to": "adk_root_agent", "label": "Clean Input", "variant": "emphasis" },
     { "from": "adk_root_agent", "to": "secret_manager", "label": "Credentials", "variant": "security", "fromSide": "top", "toSide": "bottom", "route": "straight", "labelAt": [905, 200] },
     { "from": "adk_root_agent", "to": "business_rules", "label": "Check Guard", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "straight", "labelAt": [905, 400] },
-    { "from": "adk_root_agent", "to": "firestore", "label": "Session State", "variant": "emphasis" },
-    { "from": "document_ai", "to": "firestore", "label": "HNSW Index", "variant": "dashed" },
-    { "from": "adk_root_agent", "to": "workweek_hcm", "label": "HCM Action", "variant": "emphasis" },
-    { "from": "adk_root_agent", "to": "service_immediately", "label": "ITSM Action", "variant": "emphasis" },
-    { "from": "adk_root_agent", "to": "bigquery_worm", "label": "Audit", "variant": "security" }
+    { "from": "adk_root_agent", "to": "vertex_embeddings", "label": "User Prompt Text", "variant": "emphasis", "labelAt": [975, 185] },
+    { "from": "adk_root_agent", "to": "firestore", "label": "Vector Query & Context", "variant": "emphasis", "via": [[1030, 332.5], [1030, 45], [1390, 45]], "labelAt": [1210, 45] },
+    { "from": "adk_root_agent", "to": "workweek_agent", "label": "Invoke Agent", "variant": "emphasis", "labelAt": [975, 245] },
+    { "from": "adk_root_agent", "to": "service_agent", "label": "Invoke Agent", "variant": "emphasis", "labelAt": [975, 380] },
+    { "from": "workweek_agent", "to": "workweek_hcm", "label": "HCM REST API", "variant": "emphasis", "labelAt": [1270, 220] },
+    { "from": "service_agent", "to": "service_immediately", "label": "ITSM REST API", "variant": "emphasis", "labelAt": [1270, 340] },
+    { "from": "adk_root_agent", "to": "bigquery", "label": "Audit Logging", "variant": "security", "labelAt": [975, 430] }
   ],
   "cards": [
     { "dot": "cyan", "title": "Zero-Trust Ingress", "items": ["Cloud Armor WAF filters OWASP Top 10 & DDoS attacks", "IAP extracts user email, ID, and JWT identity claims", "Safety interceptor screens payloads in sub-300ms p95"] },
-    { "dot": "rose", "title": "ADK Root Agent & Governance", "items": ["Central Root Agent orchestrates intent classification and tool execution", "Secret Manager provides fast in-memory credential caching", "Deterministic Python guardrails enforce business chronology and grounding"] },
-    { "dot": "emerald", "title": "Unified State & Audit Vault", "items": ["Firebase Firestore manages 30-min idle TTL session state and HNSW policy vectors", "BigQuery WORM Vault preserves immutable audit logs with CMEK encryption"] }
+    { "dot": "rose", "title": "Multi-Agent Architecture", "items": ["Central Root Agent delegates domain tasks to WorkWeek Agent & ServiceImmediately Agent", "Secret Manager provides fast in-memory credential caching", "Deterministic Python guardrails enforce business chronology and grounding"] },
+    { "dot": "emerald", "title": "State, RAG & Audit", "items": ["Root Agent sends user prompt text to Vertex AI Embeddings (text-embedding-004)", "Root Agent queries Firestore HNSW Vector Index and receives policy context chunks", "Google BigQuery retains centralized audit and analytics logs"] }
   ]
 }
