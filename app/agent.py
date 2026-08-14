@@ -2,7 +2,12 @@ import os
 import re
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+from dotenv import load_dotenv
 from google.adk.agents import Agent
+
+# Load environment variables from .env file if present
+load_dotenv()
+
 try:
     from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 except ImportError:
@@ -11,6 +16,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnecti
 
 # --- Remote MCP Toolsets ---
 MCP_TOKEN = os.getenv("MCP_TOKEN", "")
+
 
 workweek_mcp = McpToolset(
     connection_params=StreamableHTTPConnectionParams(
@@ -210,31 +216,86 @@ def spii_redaction_callback(callback_context: Any) -> None:
         state["user_authenticated"] = True
 
 
-# --- Root Agent Definition ---
-SYSTEM_INSTRUCTION = """You are the Enterprise HR Agentic Virtual Assistant for employees.
-Your job is to assist employees with HR policies, WorkWeek leave management, address updates, and ServiceNow IT/HRSD tickets.
+# --- Sub-Agent Instructions & Definitions ---
+
+WORKWEEK_AGENT_INSTRUCTION = """You are the specialized WorkWeek HCM Sub-Agent.
+Your job is to assist employees with all WorkWeek HCM operations and personal information requests.
+
+Available Capability & Tools:
+1. Personal Profile & Information: Use WorkWeek MCP tools `get_current_employee_id` and `get_personal_info` to retrieve the user's logged-in employee ID, full name, job title, contact details, or personal information.
+2. Leave Balances: Use `get_employee_balances` (or `get_leave_balances`) to fetch vacation, sick, and floating leave balances.
+3. Leave Requests: Use `get_leave_requests` to view submitted leave requests and `request_time_off` (or `submit_leave_request`) to submit formal time off requests.
+4. Profile Updates: Use `update_personal_info` (or `update_profile_address`) to update residential address or profile attributes.
 
 Key Guidelines:
-1. Grounding & Citations: Always retrieve and cite official HR policy manuals when answering policy questions. If policy information is insufficient, inform the user clearly.
-2. Guardrail Enforcement: Validate leave date ranges and available balances before calling `submit_leave_request`.
-3. SPII Protection: Never ask for or output Social Security Numbers (SSNs), credit card details, or unredacted passwords.
-4. Professional Tone: Be concise, clear, and empathetic.
+- Guardrail Enforcement: Validate leave date ranges and available balances before submitting leave requests.
+- Clear Feedback: Provide accurate personal details, balance breakdowns, or request status.
 """
 
-root_agent = Agent(
-    name="app",
+SERVICE_IMMEDIATELY_AGENT_INSTRUCTION = """You are the specialized ServiceImmediately (ServiceNow ITSM/HRSD) Sub-Agent.
+Your job is to assist employees with IT service management and HRSD ticketing operations.
+
+Available Capability & Tools:
+1. Ticket Queries & Personal Tickets: Use ServiceImmediately MCP tool `list_tickets` to fetch all active or past tickets for the user. Use `get_incident_status` for specific ticket lookups.
+2. Ticket Creation: Use `create_ticket` (or `create_incident_ticket`) to open new IT support or HRSD tickets.
+3. Ticket Updates: Use `add_ticket_comment` to add notes and `update_ticket_status` to modify status.
+
+Key Guidelines:
+- Intelligent Routing: Route HRSD/accommodation/medical tickets to 'HR-Tier2-Ops' and IT hardware/software issues to 'IT-Helpdesk-L1'.
+- Ticket Details: Return ticket numbers, status, category, priority, and assignment details clearly.
+"""
+
+ORCHESTRATOR_INSTRUCTION = """You are the Enterprise HR Orchestrator Virtual Assistant for employees.
+Your role is to orchestrate user requests across specialized domain sub-agents and answer policy questions directly.
+
+Delegation & Routing Rules:
+1. Personal Information & WorkWeek HCM: Delegate to `workweek_agent` for user profile info ("my information", employee ID, contact details), leave balances, leave requests, address updates, or WorkWeek queries.
+2. ServiceImmediately & Tickets: Delegate to `service_immediately_agent` for user tickets ("my tickets"), creating IT/HRSD tickets, checking ticket status, or ServiceNow queries.
+3. Policy Queries (Direct Handling): Answer enterprise policy questions (bereavement, parental leave, PTO rollover rules) directly using `search_hr_policies`. Always cite official policy sections.
+4. Security & Professionalism: Enforce SPII protection (never expose SSNs or sensitive data) and maintain a helpful, professional tone.
+"""
+
+# Specialized Domain Sub-Agent: WorkWeek HCM
+workweek_agent = Agent(
+    name="workweek_agent",
     model="gemini-2.5-flash",
-    instruction=SYSTEM_INSTRUCTION,
+    description="Specialized sub-agent for WorkWeek HCM leave management, PTO balances, address profile updates, and WorkWeek MCP tools.",
+    instruction=WORKWEEK_AGENT_INSTRUCTION,
     tools=[
-        search_hr_policies,
         get_leave_balances,
         submit_leave_request,
         update_profile_address,
+        workweek_mcp
+    ]
+)
+
+# Specialized Domain Sub-Agent: ServiceImmediately / ServiceNow ITSM
+service_immediately_agent = Agent(
+    name="service_immediately_agent",
+    model="gemini-2.5-flash",
+    description="Specialized sub-agent for ServiceImmediately / ServiceNow ITSM incident ticketing, HRSD tickets, and status queries.",
+    instruction=SERVICE_IMMEDIATELY_AGENT_INSTRUCTION,
+    tools=[
         create_incident_ticket,
         get_incident_status,
-        workweek_mcp,
         service_immediately_mcp
+    ]
+)
+
+# Central Orchestrator / Root Agent
+root_agent = Agent(
+    name="app",
+    model="gemini-2.5-flash",
+    description="Enterprise HR Orchestrator Virtual Assistant managing sub-agents for WorkWeek HCM and ServiceImmediately.",
+    instruction=ORCHESTRATOR_INSTRUCTION,
+    tools=[
+        search_hr_policies
+    ],
+    sub_agents=[
+        workweek_agent,
+        service_immediately_agent
     ],
     before_agent_callback=spii_redaction_callback
 )
+
 

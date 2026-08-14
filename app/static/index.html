@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise HR Agentic Assistant</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .chat-bubble-user {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        .chat-bubble-assistant {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+
+        .agent-badge-workweek {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .agent-badge-service {
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+        }
+
+        .agent-badge-orchestrator {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+
+        /* Smooth flex sidebar scaling */
+        #main-chat-container {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #sidebar-drawer {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #sidebar-drawer.closed {
+            width: 0px !important;
+            opacity: 0;
+            pointer-events: none;
+            border-left-width: 0px;
+        }
+
+        #sidebar-drawer.open {
+            width: 100%;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (min-width: 640px) {
+            #sidebar-drawer.open {
+                width: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full flex flex-col font-sans overflow-hidden bg-slate-950 text-slate-100">
+
+    <!-- Top Navigation Bar -->
+    <header
+        class="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 shadow-md">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                <i class="fa-solid fa-user-gear text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-100 text-lg leading-tight flex items-center gap-2">
+                    Enterprise HR Virtual Assistant
+                    <span
+                        class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">Multi-Agent
+                        ADK</span>
+                </h1>
+                <p class="text-xs text-slate-400">WorkWeek HCM & ServiceImmediately Integration</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Connection Status -->
+            <div
+                class="hidden md:flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full font-medium">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                MCP Connectors Active
+            </div>
+
+            <!-- Under The Hood Sidebar Toggle -->
+            <button id="toggle-sidebar-btn" onclick="toggleSidebar()"
+                class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition shadow-sm">
+                <i class="fa-solid fa-code text-indigo-400"></i>
+                <span>Under the Hood</span>
+                <span id="trace-count-badge"
+                    class="px-2 py-0.5 text-xs font-bold bg-indigo-600 text-white rounded-full">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Chat Container Area -->
+        <main id="main-chat-container" class="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden min-w-0">
+
+            <!-- Chat Messages Display -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+                <!-- Initial Welcome Message -->
+                <div class="flex items-start gap-4 max-w-3xl">
+                    <div
+                        class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 shrink-0 mt-1">
+                        <i class="fa-solid fa-robot text-sm"></i>
+                    </div>
+                    <div
+                        class="chat-bubble-assistant p-4 rounded-2xl rounded-tl-none space-y-2 text-slate-200 text-sm shadow-sm max-w-2xl">
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-xs font-semibold px-2 py-0.5 rounded agent-badge-orchestrator flex items-center gap-1">
+                                <i class="fa-solid fa-sitemap text-[10px]"></i> Central Orchestrator
+                            </span>
+                        </div>
+                        <p>Hello! I am your Enterprise HR Virtual Assistant powered by Google ADK multi-agent
+                            architecture.</p>
+                        <p class="text-xs text-slate-400">I can orchestrate requests across specialized sub-agents:
+                            <strong>WorkWeek HCM</strong> (PTO, leave balances, address updates) and
+                            <strong>ServiceImmediately</strong> (IT & HR tickets), as well as answer enterprise policy
+                            questions directly.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Quick Action Prompt Chips -->
+            <div class="px-4 py-2 border-t border-slate-900 bg-slate-950/80 shrink-0">
+                <div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar text-xs">
+                    <span class="text-slate-500 font-medium shrink-0 flex items-center gap-1">
+                        <i class="fa-solid fa-bolt text-amber-400"></i> Quick Actions:
+                    </span>
+                    <button onclick="sendQuickPrompt('What is my leave balance?')"
+                        class="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition shrink-0">
+                        🌴 Check Leave Balances
+                    </button>
+                    <button onclick="sendQuickPrompt('Submit a 5 day vacation leave request. Ask me for the dates')"
+                        class="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition shrink-0">
+                        🏖️ Submit 5-Day Vacation
+                    </button>
+                    <button onclick="sendQuickPrompt('Update my residential address. Ask me what the new address is')"
+                        class="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition shrink-0">
+                        🏡 Update Address
+                    </button>
+                    <button
+                        onclick="sendQuickPrompt('My laptop monitor died and I need a replacement ticket logged immediately.')"
+                        class="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition shrink-0">
+                        💻 Report Broken Monitor Ticket
+                    </button>
+                    <button onclick="sendQuickPrompt('What is our company parental leave policy?')"
+                        class="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition shrink-0">
+                        📄 Parental Leave Policy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Input Controls -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900 shrink-0">
+                <form id="chat-form" onsubmit="handleChatSubmit(event)" class="max-w-4xl mx-auto flex items-end gap-3">
+                    <div
+                        class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus-within:border-blue-500 transition shadow-inner">
+                        <textarea id="user-input" rows="1"
+                            placeholder="Ask about HR policies, leave balances, IT tickets, or address updates..."
+                            class="w-full bg-transparent text-slate-100 text-sm focus:outline-none resize-none max-h-32"
+                            onkeydown="handleKeyDown(event)"></textarea>
+                    </div>
+                    <button type="submit" id="send-btn"
+                        class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition shrink-0 disabled:opacity-50">
+                        <span>Send</span>
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Right Side Drawer: "Under the Hood" Agent Inspector -->
+        <aside id="sidebar-drawer"
+            class="closed relative shrink-0 h-full bg-slate-900 border-l border-slate-800 z-20 flex flex-col shadow-2xl overflow-hidden">
+            <!-- Sidebar Header -->
+            <div
+                class="h-16 px-4 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/90 backdrop-blur">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-indigo-400"></i>
+                    <h2 class="font-semibold text-sm text-slate-100">Under the Hood (Agent Telemetry)</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearTraces()" title="Clear Trace Logs"
+                        class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition text-xs">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                    <button onclick="toggleSidebar()" title="Close Drawer"
+                        class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition">
+                        <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Trace Log Content Container -->
+            <div id="trace-log-container" class="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-xs">
+                <div id="trace-empty-state" class="text-center py-12 text-slate-500 space-y-2">
+                    <i class="fa-solid fa-terminal text-2xl text-slate-700"></i>
+                    <p class="text-xs">No execution traces yet.<br>Send a request to observe real-time agent handoffs &
+                        tool calls.</p>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- JavaScript Controller -->
+    <script>
+        let currentSessionId = null;
+        let traceCount = 0;
+
+        function toggleSidebar() {
+            const drawer = document.getElementById('sidebar-drawer');
+            drawer.classList.toggle('closed');
+            drawer.classList.toggle('open');
+            setTimeout(() => {
+                const chatMessages = document.getElementById('chat-messages');
+                if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 300);
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleChatSubmit(e);
+            }
+        }
+
+        function sendQuickPrompt(promptText) {
+            const input = document.getElementById('user-input');
+            input.value = promptText;
+            handleChatSubmit(new Event('submit'));
+        }
+
+        function clearTraces() {
+            const container = document.getElementById('trace-log-container');
+            container.innerHTML = `
+                <div id="trace-empty-state" class="text-center py-12 text-slate-500 space-y-2">
+                    <i class="fa-solid fa-terminal text-2xl text-slate-700"></i>
+                    <p class="text-xs">No execution traces yet.<br>Send a request to observe real-time agent handoffs & tool calls.</p>
+                </div>`;
+            traceCount = 0;
+            document.getElementById('trace-count-badge').innerText = '0';
+        }
+
+        function appendUserMessage(text) {
+            const chatMessages = document.getElementById('chat-messages');
+            const msgHtml = `
+                <div class="flex items-start justify-end gap-4 max-w-3xl ml-auto">
+                    <div class="chat-bubble-user p-4 rounded-2xl rounded-tr-none text-white text-sm shadow-md max-w-2xl">
+                        <p>${escapeHtml(text)}</p>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0 mt-1 shadow-md">
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </div>
+                </div>`;
+            chatMessages.insertAdjacentHTML('beforeend', msgHtml);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendAssistantLoading() {
+            const chatMessages = document.getElementById('chat-messages');
+            const loadingId = 'loading-' + Date.now();
+            const msgHtml = `
+                <div id="${loadingId}" class="flex items-start gap-4 max-w-3xl">
+                    <div class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 shrink-0 mt-1">
+                        <i class="fa-solid fa-robot text-sm"></i>
+                    </div>
+                    <div class="chat-bubble-assistant p-4 rounded-2xl rounded-tl-none text-slate-400 text-sm flex items-center gap-3">
+                        <i class="fa-solid fa-circle-notch fa-spin text-blue-400"></i>
+                        <span>Orchestrating request across sub-agents...</span>
+                    </div>
+                </div>`;
+            chatMessages.insertAdjacentHTML('beforeend', msgHtml);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return loadingId;
+        }
+
+        function appendAssistantResponse(agentName, text) {
+            const chatMessages = document.getElementById('chat-messages');
+            let badgeClass = 'agent-badge-orchestrator';
+            let badgeIcon = 'fa-sitemap';
+            let displayName = 'Central Orchestrator';
+
+            if (agentName === 'workweek_agent') {
+                badgeClass = 'agent-badge-workweek';
+                badgeIcon = 'fa-briefcase';
+                displayName = 'WorkWeek Sub-Agent';
+            } else if (agentName === 'service_immediately_agent') {
+                badgeClass = 'agent-badge-service';
+                badgeIcon = 'fa-ticket';
+                displayName = 'ServiceImmediately Sub-Agent';
+            }
+
+            const formattedMarkdown = marked.parse(text || '');
+
+            const msgHtml = `
+                <div class="flex items-start gap-4 max-w-3xl">
+                    <div class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 shrink-0 mt-1">
+                        <i class="fa-solid fa-robot text-sm"></i>
+                    </div>
+                    <div class="chat-bubble-assistant p-4 rounded-2xl rounded-tl-none space-y-2 text-slate-200 text-sm shadow-sm max-w-2xl">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded ${badgeClass} flex items-center gap-1">
+                                <i class="fa-solid ${badgeIcon} text-[10px]"></i> ${displayName}
+                            </span>
+                        </div>
+                        <div class="prose prose-invert prose-sm max-w-none space-y-2">
+                            ${formattedMarkdown}
+                        </div>
+                    </div>
+                </div>`;
+            chatMessages.insertAdjacentHTML('beforeend', msgHtml);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendTraceItem(trace) {
+            const container = document.getElementById('trace-log-container');
+            const emptyState = document.getElementById('trace-empty-state');
+            if (emptyState) emptyState.remove();
+
+            traceCount++;
+            document.getElementById('trace-count-badge').innerText = traceCount;
+
+            let cardHtml = '';
+            const timestamp = new Date().toLocaleTimeString();
+
+            if (trace.type === 'transfer') {
+                cardHtml = `
+                    <div class="p-3 rounded-lg bg-indigo-950/40 border border-indigo-500/30 space-y-1">
+                        <div class="flex items-center justify-between text-indigo-400 font-semibold">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-right-left text-xs"></i> AGENT TRANSFER
+                            </span>
+                            <span class="text-[10px] text-slate-500">${timestamp}</span>
+                        </div>
+                        <div class="text-slate-300 font-sans text-xs">
+                            Active Agent ➔ <span class="text-indigo-300 font-bold">${escapeHtml(trace.agent)}</span>
+                        </div>
+                    </div>`;
+            } else if (trace.type === 'tool_call') {
+                const argsJson = JSON.stringify(trace.args || {}, null, 2);
+                cardHtml = `
+                    <div class="p-3 rounded-lg bg-slate-800/80 border border-slate-700 space-y-1.5">
+                        <div class="flex items-center justify-between text-amber-400 font-semibold">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-gears text-xs"></i> TOOL CALL: ${escapeHtml(trace.tool_name)}
+                            </span>
+                            <span class="text-[10px] text-slate-500">${timestamp}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400">Agent: <span class="text-slate-200">${escapeHtml(trace.agent)}</span></div>
+                        <details class="text-[11px] bg-slate-950 p-2 rounded border border-slate-800 text-slate-300">
+                            <summary class="cursor-pointer font-sans text-slate-400 hover:text-slate-200">Input Arguments</summary>
+                            <pre class="mt-1 overflow-x-auto text-[10px] text-amber-300">${escapeHtml(argsJson)}</pre>
+                        </details>
+                    </div>`;
+            } else if (trace.type === 'tool_response') {
+                const resultJson = JSON.stringify(trace.result || {}, null, 2);
+                cardHtml = `
+                    <div class="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 space-y-1.5">
+                        <div class="flex items-center justify-between text-emerald-400 font-semibold">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check text-xs"></i> TOOL RESPONSE: ${escapeHtml(trace.tool_name)}
+                            </span>
+                            <span class="text-[10px] text-slate-500">${timestamp}</span>
+                        </div>
+                        <details class="text-[11px] bg-slate-950 p-2 rounded border border-slate-800 text-slate-300">
+                            <summary class="cursor-pointer font-sans text-slate-400 hover:text-slate-200">Output Payload</summary>
+                            <pre class="mt-1 overflow-x-auto text-[10px] text-emerald-300">${escapeHtml(resultJson)}</pre>
+                        </details>
+                    </div>`;
+            }
+
+            container.insertAdjacentHTML('beforeend', cardHtml);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function handleChatSubmit(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('user-input');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            input.value = '';
+            appendUserMessage(prompt);
+
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            const loadingId = appendAssistantLoading();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: prompt, session_id: currentSessionId })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+
+                if (data.session_id) currentSessionId = data.session_id;
+
+                // Append telemetry traces to sidebar
+                if (data.traces && Array.isArray(data.traces)) {
+                    data.traces.forEach(trace => appendTraceItem(trace));
+                }
+
+                // Render assistant response
+                appendAssistantResponse(data.agent, data.response || data.message);
+
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                appendAssistantResponse('app', '⚠️ Failed to connect to server: ' + err.message);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+
+</html>
