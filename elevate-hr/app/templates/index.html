@@ -93,11 +93,23 @@
                 </svg>
             </div>
             <div>
-                <h1 class="font-bold text-base md:text-lg leading-tight text-slate-900 dark:text-white">Altostrat Enterprise Assistant</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">HR Self-Service (WorkWeek) & IT Support (ServiceImmediately)</p>
+                <h1 id="ui-title" class="font-bold text-base md:text-lg leading-tight text-slate-900 dark:text-white">Altostrat Enterprise Assistant</h1>
+                <p id="ui-subtitle" class="text-xs text-slate-500 dark:text-slate-400">HR Self-Service (WorkWeek) & IT Support (ServiceImmediately)</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
+            <!-- Language Selector Dropdown -->
+            <div class="relative inline-block text-left">
+                <select id="language-select" onchange="changeLanguage(this.value)" class="px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold outline-none border-none transition cursor-pointer">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="pt">Português</option>
+                    <option value="hi">हिन्दी</option>
+                </select>
+            </div>
+
             <!-- Theme Toggle Button -->
             <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition duration-150" title="Toggle dark/light mode">
                 <i id="theme-toggle-icon" class="fa-solid fa-moon text-sm"></i>
@@ -110,7 +122,7 @@
             
             <button onclick="resetSession()" class="flex items-center space-x-1.5 px-3.5 py-2.5 bg-indigo-55 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 active:scale-95 rounded-xl text-sm font-medium transition duration-150 shadow-sm border border-indigo-100 dark:border-indigo-900/20">
                 <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
-                <span>New Session</span>
+                <span id="ui-new-session">New Session</span>
             </button>
         </div>
     </header>
@@ -122,8 +134,8 @@
         <main class="flex-1 flex flex-col bg-slate-50/50 dark:bg-slate-950 overflow-hidden border-r border-slate-200 dark:border-slate-850">
             <!-- Messages Container -->
             <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-6">
-                <!-- Welcome Message -->
-                <div class="flex items-start space-x-3.5 max-w-3xl">
+                <!-- Welcome Message (loaded dynamically according to language) -->
+                <div id="welcome-message-block" class="flex items-start space-x-3.5 max-w-3xl">
                     <div class="bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-4 h-4" viewBox="0 0 16 16">
                             <path d="M7.657 6.243L6 11 4.343 6.243 0 4.5l4.343-1.743L6 0l1.657 2.757L12 4.5l-4.343 1.743z"/>
@@ -131,8 +143,8 @@
                         </svg>
                     </div>
                     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 chat-bubble-assistant rounded-3xl rounded-tl-none px-5 py-4 shadow-sm text-slate-700 dark:text-slate-300 max-w-full leading-relaxed">
-                        <p class="font-bold text-slate-850 dark:text-white mb-1.5">Hello! I am your Altostrat Assistant.</p>
-                        <p class="text-sm">I can help you coordinate HR tasks like leave requests and contact details (WorkWeek), as well as IT tickets and support incidents (ServiceImmediately).</p>
+                        <p id="ui-welcome-title" class="font-bold text-slate-850 dark:text-white mb-1.5">Hello! I am your Altostrat Assistant.</p>
+                        <p id="ui-welcome-desc" class="text-sm">I can help you coordinate HR tasks like leave requests and contact details (WorkWeek), as well as IT tickets and support incidents (ServiceImmediately).</p>
                     </div>
                 </div>
             </div>
@@ -141,14 +153,14 @@
             <div class="max-w-3xl mx-auto w-full px-4 mb-4 shrink-0 z-10">
                 <!-- Suggestions row -->
                 <div id="suggestions-row" class="flex flex-wrap gap-2 mb-3 justify-center">
-                    <button onclick="useSuggestion('What is the bereavement leave policy?')" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
+                    <button id="ui-suggest-1" onclick="useSuggestion(this.innerText)" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
                         What is the bereavement leave policy?
                     </button>
-                    <button onclick="useSuggestion('I want to request vacation from 2026-10-10 to 2026-10-15')" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
-                        Request vacation
+                    <button id="ui-suggest-2" onclick="useSuggestion(this.innerText)" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
+                        I want to request vacation from 2026-10-10 to 2026-10-15
                     </button>
-                    <button onclick="useSuggestion('Create a critical IT ticket because the production login system is down.')" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
-                        Create IT Ticket
+                    <button id="ui-suggest-3" onclick="useSuggestion(this.innerText)" class="bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-350 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm active:scale-95">
+                        Create a critical IT ticket because the production login system is down.
                     </button>
                 </div>
                 <!-- Chat input card -->
@@ -162,9 +174,15 @@
                             required
                         ></textarea>
                         <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                            <button type="button" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition">
-                                <i class="fa-solid fa-globe text-base"></i>
-                            </button>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition">
+                                    <i class="fa-solid fa-globe text-base"></i>
+                                </button>
+                                <!-- Voice Command Microphone Button -->
+                                <button type="button" id="voice-button" onclick="toggleVoiceRecognition()" class="w-8 h-8 rounded-full text-slate-400 dark:text-slate-500 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-850 flex items-center justify-center transition" title="Voice Search">
+                                    <i id="voice-icon" class="fa-solid fa-microphone text-base"></i>
+                                </button>
+                            </div>
                             <button 
                                 type="submit" 
                                 id="send-button"
@@ -183,9 +201,9 @@
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-list-check text-slate-600 dark:text-slate-300"></i>
-                    <h2 class="font-semibold text-slate-800 dark:text-white text-sm">Execution Logs</h2>
+                    <h2 id="ui-logs-title" class="font-semibold text-slate-800 dark:text-white text-sm">Execution Logs</h2>
                 </div>
-                <button onclick="clearLogs()" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                <button id="ui-clear-btn" onclick="clearLogs()" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
                     Clear
                 </button>
             </div>
@@ -199,6 +217,129 @@
 
     <!-- JS Logic -->
     <script>
+        const TRANSLATIONS = {
+            en: {
+                title: "Altostrat Enterprise Assistant",
+                subtitle: "HR Self-Service (WorkWeek) & IT Support (ServiceImmediately)",
+                welcomeTitle: "Hello! I am your Altostrat Assistant.",
+                welcomeDesc: "I can help you coordinate HR tasks like leave requests and contact details (WorkWeek), as well as IT tickets and support incidents (ServiceImmediately).",
+                newSession: "New Session",
+                suggestion1: "What is the bereavement leave policy?",
+                suggestion2: "I want to request vacation from 2026-10-10 to 2026-10-15",
+                suggestion3: "Create a critical IT ticket because the production login system is down.",
+                placeholder: "Ask, write or search for anything...",
+                executionLogs: "Execution Logs",
+                clear: "Clear",
+                noLogs: "No actions recorded yet. Inquire or submit a request to see agent routing and tool execution.",
+                speechNotSupported: "Speech recognition is not supported in this browser.",
+                speechError: "Speech recognition error occurred.",
+                listening: "Listening...",
+                sessionReset: "New session started! How can I assist you with Altostrat's HRMS and ITSM tools today?",
+                sessionConfigError: "System configuration error: Unable to start agent session.",
+                errorCommunicating: "Error communicating with agent: "
+            },
+            es: {
+                title: "Asistente Altostrat Enterprise",
+                subtitle: "Autoservicio de RRHH (WorkWeek) y Soporte de TI (ServiceImmediately)",
+                welcomeTitle: "¡Hola! Soy tu asistente de Altostrat.",
+                welcomeDesc: "Puedo ayudarte a coordinar tareas de RRHH como solicitudes de permisos y detalles de contacto (WorkWeek), así como tickets de TI e incidentes de soporte (ServiceImmediately).",
+                newSession: "Nueva Sesión",
+                suggestion1: "¿Cuál es la política de licencia por duelo?",
+                suggestion2: "Quiero solicitar vacaciones del 2026-10-10 al 2026-10-15",
+                suggestion3: "Crear un ticket de TI crítico porque el sistema de inicio de sesión de producción está caído.",
+                placeholder: "Pregunta, escribe o busca algo...",
+                executionLogs: "Registros de Ejecución",
+                clear: "Limpiar",
+                noLogs: "Aún no se han registrado acciones. Realiza una consulta o envía una solicitud para ver el enrutamiento del agente y la ejecución de herramientas.",
+                speechNotSupported: "El reconocimiento de voz no es compatible con este navegador.",
+                speechError: "Ocurrió un error en el reconocimiento de voz.",
+                listening: "Escuchando...",
+                sessionReset: "¡Nueva sesión iniciada! ¿Cómo posso ayudarte hoy con las herramientas de HRMS e ITSM de Altostrat?",
+                sessionConfigError: "Error de configuración del sistema: no se pudo iniciar la sessão del agente.",
+                errorCommunicating: "Error al comunicarse con el agente: "
+            },
+            fr: {
+                title: "Assistant Altostrat Enterprise",
+                subtitle: "Libre-service RH (WorkWeek) & Support Informatique (ServiceImmediately)",
+                welcomeTitle: "Bonjour ! Je suis votre assistant Altostrat.",
+                welcomeDesc: "Je peux vous aider à coordonner les tâches RH comme les demandes de congé et les coordonnées (WorkWeek), ainsi que les tickets informatiques et les incidents de support (ServiceImmediately).",
+                newSession: "Nouvelle Session",
+                suggestion1: "Quelle est la politique de congé pour deuil ?",
+                suggestion2: "Je souhaite demander des vacances du 2026-10-10 au 2026-10-15",
+                suggestion3: "Créer un ticket informatique critique car le système de connexion de production est en panne.",
+                placeholder: "Demandez, écrivez ou recherchez quelque chose...",
+                executionLogs: "Journaux d'Exécution",
+                clear: "Effacer",
+                noLogs: "Aucune action enregistrée pour le moment. Posez une question ou soumettez une demande pour voir le routage de l'agent et l'exécution des outils.",
+                speechNotSupported: "La reconnaissance vocale n'est pas prise en charge par ce navigateur.",
+                speechError: "Une erreur de reconnaissance vocale s'est produite.",
+                listening: "Écoute...",
+                sessionReset: "Nouvelle session démarrée ! Comment puis-je vous aider aujourd'hui avec les outils HRMS et ITSM d'Altostrat ?",
+                sessionConfigError: "Erreur de configuration système : Impossible de démarrer la session de l'agent.",
+                errorCommunicating: "Erreur de communication avec l'agent : "
+            },
+            de: {
+                title: "Altostrat Enterprise Assistent",
+                subtitle: "HR-Selbstbedienung (WorkWeek) & IT-Support (ServiceImmediately)",
+                welcomeTitle: "Hallo! Ich bin Ihr Altostrat Assistent.",
+                welcomeDesc: "Ich kann Ihnen helfen, HR-Aufgaben wie Urlaubsanträge und Kontaktdaten (WorkWeek) sowie IT-Tickets und Supportfälle (ServiceImmediately) zu koordinieren.",
+                newSession: "Neue Sitzung",
+                suggestion1: "Wie sieht die Regelung für Sonderurlaub im Todesfall aus?",
+                suggestion2: "Ich möchte Urlaub vom 10.10.2026 bis 15.10.2026 beantragen",
+                suggestion3: "Erstellen Sie ein kritisches IT-Ticket, da das Produktions-Login-System ausgefallen ist.",
+                placeholder: "Fragen, schreiben oder suchen Sie nach etwas...",
+                executionLogs: "Ausführungsprotokolle",
+                clear: "Löschen",
+                noLogs: "Noch keine Aktionen aufgezeichnet. Stellen Sie eine Anfrage, um das Agenten-Routing und die Tool-Ausführung zu sehen.",
+                speechNotSupported: "Spracherkennung wird von diesem Browser nicht unterstützt.",
+                speechError: "Fehler bei der Spracherkennung aufgetreten.",
+                listening: "Zuhören...",
+                sessionReset: "Neue Sitzung gestartet! Wie kann ich Ihnen heute bei den HRMS- und ITSM-Tools von Altostrat helfen?",
+                sessionConfigError: "Systemkonfigurationsfehler: Agentensitzung konnte nicht gestartet werden.",
+                errorCommunicating: "Fehler bei der Kommunikation mit dem Agenten: "
+            },
+            pt: {
+                title: "Assistente Altostrat Enterprise",
+                subtitle: "Autoatendimento de RH (WorkWeek) e Suporte de TI (ServiceImmediately)",
+                welcomeTitle: "Olá! Eu sou o seu Assistente Altostrat.",
+                welcomeDesc: "Posso ajudar você a coordenar tarefas de RH, como solicitações de licença e detalhes de contato (WorkWeek), além de chamados de TI e incidentes de suporte (ServiceImmediately).",
+                newSession: "Nova Sessão",
+                suggestion1: "Qual é a política de licença por luto?",
+                suggestion2: "Quero solicitar férias de 2026-10-10 a 2026-10-15",
+                suggestion3: "Criar um chamado de TI crítico porque o sistema de login de produção está fora do ar.",
+                placeholder: "Pergunte, escreva ou pesquise por qualquer coisa...",
+                executionLogs: "Registros de Execução",
+                clear: "Limpar",
+                noLogs: "Nenhuma ação registrada ainda. Pergunte ou envie uma solicitação para ver o roteamento do agente e a execução das ferramentas.",
+                speechNotSupported: "O reconhecimento de voz não é suportado neste navegador.",
+                speechError: "Ocorreu um erro no reconhecimento de voz.",
+                listening: "Ouvindo...",
+                sessionReset: "Nova sessão iniciada! Como posso ajudar você hoje com as ferramentas de HRMS e ITSM da Altostrat?",
+                sessionConfigError: "Erro de configuração do sistema: não foi possível iniciar a sessão do agente.",
+                errorCommunicating: "Erro ao se comunicar com o agente: "
+            },
+            hi: {
+                title: "एल्टोस्ट्रेट एंटरप्राइज असिस्टेंट",
+                subtitle: "HR स्वयं-सेवा (WorkWeek) और IT सहायता (ServiceImmediately)",
+                welcomeTitle: "नमस्ते! मैं आपका एल्टोस्ट्रेट सहायक हूँ।",
+                welcomeDesc: "मैं वर्कवीक (WorkWeek) पर छुट्टी के अनुरोध और संपर्क विवरण जैसे एचआर कार्यों को व्यवस्थित करने में और सर्विसइमीडिएटली (ServiceImmediately) पर आईटी टिकट और सहायता घटनाओं को प्रबंधित करने में आपकी सहायता कर सकता हूँ।",
+                newSession: "नया सत्र",
+                suggestion1: "शोक अवकाश (bereavement leave) की नीति क्या है?",
+                suggestion2: "मैं 2026-10-10 से 2026-10-15 तक छुट्टी का अनुरोध करना चाहता हूँ",
+                suggestion3: "एक गंभीर आईटी टिकट बनाएं क्योंकि प्रोडक्शन लॉगिन सिस्टम काम नहीं कर रहा है।",
+                placeholder: "पूछें, लिखें या कुछ भी खोजें...",
+                executionLogs: "निष्पादन लॉग",
+                clear: "साफ़ करें",
+                noLogs: "अभी तक कोई कार्रवाई दर्ज नहीं की गई है। एजेंट रूटिंग और टूल निष्पादन देखने के लिए कोई पूछताछ या अनुरोध भेजें।",
+                speechNotSupported: "इस ब्राउज़र में भाषण पहचान (speech recognition) समर्थित नहीं है।",
+                speechError: "भाषण पहचान में त्रुटि हुई।",
+                listening: "सुन रहा हूँ...",
+                sessionReset: "नया सत्र शुरू हो गया है! मैं आज एल्टोस्ट्रेट के एचआरएमएस और आईटीएसएम टूल के साथ आपकी कैसे सहायता कर सकता हूँ?",
+                sessionConfigError: "सिस्टम कॉन्फ़िगरेशन त्रुटि: एजेंट सत्र शुरू करने में असमर्थ।",
+                errorCommunicating: "एजेंट के साथ संचार करने में त्रुटि: "
+            }
+        };
+
         const API_BASE = window.location.origin;
         let userId = localStorage.getItem('chatbot_user_id');
         if (!userId) {
@@ -207,7 +348,7 @@
         }
 
         let sessionId = localStorage.getItem('chatbot_session_id');
-        let currentPrompt = '';
+        let currentLanguage = localStorage.getItem('chatbot_lang') || 'en';
 
         // Dark Mode toggler
         function toggleDarkMode() {
@@ -234,10 +375,113 @@
         }
         updateThemeUI();
 
+        // Language Translation Handler
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('chatbot_lang', lang);
+            
+            // Update Select dropdown value
+            document.getElementById('language-select').value = lang;
+
+            // Translate static elements
+            const dict = TRANSLATIONS[lang];
+            document.title = dict.title; // update title programmatically to keep test assertions clean
+            document.getElementById('ui-title').innerText = dict.title;
+            document.getElementById('ui-subtitle').innerText = dict.subtitle;
+            document.getElementById('ui-welcome-title').innerText = dict.welcomeTitle;
+            document.getElementById('ui-welcome-desc').innerText = dict.welcomeDesc;
+            document.getElementById('ui-suggest-1').innerText = dict.suggestion1;
+            document.getElementById('ui-suggest-2').innerText = dict.suggestion2;
+            document.getElementById('ui-suggest-3').innerText = dict.suggestion3;
+            document.getElementById('user-input').placeholder = dict.placeholder;
+            document.getElementById('ui-new-session').innerText = dict.newSession;
+            document.getElementById('ui-logs-title').innerText = dict.executionLogs;
+            document.getElementById('ui-clear-btn').innerText = dict.clear;
+
+            // Translate log default state if it has not been populated
+            const logContainer = document.getElementById('execution-logs');
+            if (logContainer.querySelector('.italic')) {
+                logContainer.innerHTML = `<div class="text-slate-400 dark:text-slate-500 italic">${dict.noLogs}</div>`;
+            }
+
+            // Force recreate a new session on the backend to propagate the new state
+            resetSession();
+        }
+
+        // Voice Command setup
+        let recognition = null;
+        let isListening = false;
+
+        function initVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                return null;
+            }
+            const rec = new SpeechRecognition();
+            rec.continuous = false;
+            rec.interimResults = false;
+            
+            rec.onstart = () => {
+                isListening = true;
+                const icon = document.getElementById('voice-icon');
+                icon.className = 'fa-solid fa-microphone text-red-500 animate-pulse';
+                const btn = document.getElementById('voice-button');
+                btn.title = TRANSLATIONS[currentLanguage].listening;
+            };
+
+            rec.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const textarea = document.getElementById('user-input');
+                textarea.value = (textarea.value + " " + transcript).trim();
+            };
+
+            rec.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                addSystemNotification(TRANSLATIONS[currentLanguage].speechError + ": " + event.error, "error");
+            };
+
+            rec.onend = () => {
+                isListening = false;
+                const icon = document.getElementById('voice-icon');
+                icon.className = 'fa-solid fa-microphone text-base';
+                const btn = document.getElementById('voice-button');
+                btn.title = "Voice Search";
+            };
+
+            return rec;
+        }
+
+        function toggleVoiceRecognition() {
+            if (!recognition) {
+                recognition = initVoiceRecognition();
+            }
+            if (!recognition) {
+                addSystemNotification(TRANSLATIONS[currentLanguage].speechNotSupported, "error");
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                const langMap = {
+                    en: 'en-US',
+                    es: 'es-ES',
+                    fr: 'fr-FR',
+                    de: 'de-DE',
+                    pt: 'pt-BR',
+                    hi: 'hi-IN'
+                };
+                recognition.lang = langMap[currentLanguage] || 'en-US';
+                recognition.start();
+            }
+        }
+
         // Initial configuration
         document.addEventListener('DOMContentLoaded', () => {
-            initSession();
-            
+            // Apply language from local storage on boot
+            document.getElementById('language-select').value = currentLanguage;
+            changeLanguage(currentLanguage);
+
             // Enter key submits text box
             document.getElementById('user-input').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -251,10 +495,11 @@
         async function initSession() {
             try {
                 if (!sessionId) {
+                    const langLabel = { en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", hi: "Hindi" }[currentLanguage] || "English";
                     const response = await fetch(`${API_BASE}/apps/app/users/${userId}/sessions`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ state: { preferred_language: 'English', initialized_at: new Date().toISOString() } })
+                        body: JSON.stringify({ state: { preferred_language: langLabel, initialized_at: new Date().toISOString() } })
                     });
                     if (response.ok) {
                         const data = await response.json();
@@ -269,7 +514,7 @@
                 document.getElementById('session-display').innerText = `Session: ${sessionId.substring(0, 8)}...`;
             } catch (err) {
                 console.error(err);
-                addSystemNotification("System configuration error: Unable to start agent session.", "error");
+                addSystemNotification(TRANSLATIONS[currentLanguage].sessionConfigError, "error");
             }
         }
 
@@ -280,6 +525,7 @@
             
             // Clear UI elements
             const msgContainer = document.getElementById('messages-container');
+            const dict = TRANSLATIONS[currentLanguage];
             msgContainer.innerHTML = `
                 <div class="flex items-start space-x-3.5 max-w-3xl">
                     <div class="bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md shrink-0">
@@ -289,8 +535,8 @@
                         </svg>
                     </div>
                     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 chat-bubble-assistant rounded-3xl rounded-tl-none px-5 py-4 shadow-sm text-sm text-slate-700 dark:text-slate-350 max-w-full leading-relaxed">
-                        <p class="font-bold text-slate-850 dark:text-white mb-1.5">New session started!</p>
-                        <p class="text-sm">How can I assist you with Altostrat's HRMS and ITSM tools today?</p>
+                        <p id="ui-welcome-title" class="font-bold text-slate-850 dark:text-white mb-1.5">${dict.welcomeTitle}</p>
+                        <p id="ui-welcome-desc" class="text-sm">${dict.welcomeDesc}</p>
                     </div>
                 </div>
             `;
@@ -307,8 +553,9 @@
 
         // Clear execution log pane
         function clearLogs() {
+            const dict = TRANSLATIONS[currentLanguage];
             document.getElementById('execution-logs').innerHTML = `
-                <div class="text-slate-400 dark:text-slate-500 italic">No actions recorded yet. Inquire or submit a request to see agent routing and tool execution.</div>
+                <div class="text-slate-400 dark:text-slate-500 italic">${dict.noLogs}</div>
             `;
         }
 
@@ -348,7 +595,6 @@
             
             // Log starter
             const logContainer = document.getElementById('execution-logs');
-            // If logs has the default text, replace it
             if (logContainer.querySelector('.italic')) {
                 logContainer.innerHTML = '';
             }
@@ -359,6 +605,8 @@
                 </div>
             `;
             logContainer.scrollTop = logContainer.scrollHeight;
+
+            const langLabel = { en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", hi: "Hindi" }[currentLanguage] || "English";
 
             // Call backend SSE API
             try {
@@ -373,6 +621,7 @@
                             role: 'user',
                             parts: [{ text: text }]
                         },
+                        state_delta: { preferred_language: langLabel },
                         streaming: true
                     })
                 });
@@ -385,7 +634,6 @@
                 const decoder = new TextDecoder('utf-8');
                 let buffer = '';
                 
-                // Remove placeholder pulse animation and text once streaming starts
                 let startedStreaming = false;
                 let hasStreamedText = false;
 
@@ -420,14 +668,13 @@
                     }
                 }
                 
-                // Once stream finishes, analyze text to render dynamic HRMS/ITSM action cards if applicable
                 parseResultForDynamicCards(assistantBubble);
 
             } catch (error) {
                 console.error(error);
                 assistantBubble.innerHTML = `
                     <span class="text-red-650 dark:text-red-400 font-medium">
-                        <i class="fa-solid fa-circle-exclamation mr-1.5"></i>Error communicating with agent: ${error.message}
+                        <i class="fa-solid fa-circle-exclamation mr-1.5"></i>${TRANSLATIONS[currentLanguage].errorCommunicating}${error.message}
                     </span>
                 `;
             }
@@ -454,14 +701,12 @@
             const isPartial = event.partial !== false;
             const logContainer = document.getElementById('execution-logs');
 
-            // Parse message text chunks
             let textChunks = '';
             for (const part of parts) {
                 if (part.text) {
                     textChunks += part.text;
                 }
                 
-                // Log tool calls
                 if (part.functionCall) {
                     const fCall = part.functionCall;
                     const argsStr = JSON.stringify(fCall.args);
@@ -474,7 +719,6 @@
                     logContainer.scrollTop = logContainer.scrollHeight;
                 }
 
-                // Log tool responses
                 if (part.functionResponse) {
                     const fResp = part.functionResponse;
                     const respStr = getResponseBodyString(fResp.response);
@@ -490,7 +734,6 @@
             }
 
             if (textChunks) {
-                // If this is a streaming chunk (partial: true), or we have not streamed any text yet, append it.
                 if (isPartial || !hasStreamedText) {
                     const currentRawText = (assistantBubble.dataset.rawText || '') + textChunks;
                     assistantBubble.dataset.rawText = currentRawText;
@@ -504,13 +747,12 @@
                 }
             }
 
-            // Log routing / subagent delegation actions
             if (actions.transferToAgent) {
                 logContainer.innerHTML += `
-                    <div class="text-slate-500 dark:text-slate-400 mt-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-150 dark:border-indigo-900/30 p-2 rounded">
+                    <div class="text-slate-500 dark:text-slate-400 mt-2 bg-indigo-55 dark:bg-indigo-950/20 border border-indigo-150 dark:border-indigo-900/30 p-2 rounded">
                         <i class="fa-solid fa-route mr-1 text-indigo-500 dark:text-indigo-400"></i>
                         <span class="font-bold text-indigo-700 dark:text-indigo-400">[${author}]</span> delegates query to 
-                        <span class="font-bold text-indigo-900 dark:text-indigo-350">${actions.transferToAgent}</span>
+                        <span class="font-bold text-indigo-900 dark:text-indigo-355">${actions.transferToAgent}</span>
                     </div>
                 `;
                 logContainer.scrollTop = logContainer.scrollHeight;
@@ -519,12 +761,12 @@
             return hasStreamedText;
         }
 
-        // Parses the final text response inside the bubble to append visual Cards for approval or tickets
+        // Parses the final text response inside the bubble to append visual Cards
         function parseResultForDynamicCards(bubble) {
             const rawHtml = bubble.innerHTML;
             
-            // Check for Vacation Approval
-            if (rawHtml.includes("Approved") && rawHtml.includes("Vacation")) {
+            if ((rawHtml.includes("Approved") || rawHtml.includes("Aprobado") || rawHtml.includes("Approuvé") || rawHtml.includes("Genehmigt") || rawHtml.includes("मंजूर")) && 
+                (rawHtml.includes("Vacation") || rawHtml.includes("Vacaciones") || rawHtml.includes("Congé") || rawHtml.includes("Urlaub") || rawHtml.includes("छुट्टी"))) {
                 const matchDates = rawHtml.match(/\d{4}-\d{2}-\d{2}/g);
                 const start = matchDates ? matchDates[0] : "N/A";
                 const end = matchDates && matchDates[1] ? matchDates[1] : "N/A";
@@ -543,8 +785,8 @@
                 `;
             }
             
-            // Check for IT Incident ticket creation
-            if (rawHtml.includes("INC-") || rawHtml.includes("ticket") && rawHtml.includes("created")) {
+            if (rawHtml.includes("INC-") || ((rawHtml.includes("ticket") || rawHtml.includes("incident") || rawHtml.includes("टिकट")) && 
+                (rawHtml.includes("created") || rawHtml.includes("creado") || rawHtml.includes("créé") || rawHtml.includes("erstellt") || rawHtml.includes("बनाया")))) {
                 const incNumber = rawHtml.match(/INC-\d+/i) ? rawHtml.match(/INC-\d+/i)[0].toUpperCase() : "INC-NEW";
                 
                 bubble.innerHTML += `

@@ -185,7 +185,10 @@ root_agent = Agent(
         "   b. Call `resolve_employee_id` to get their active employee ID.\n"
         "   c. Call `transfer_to_agent` to delegate to `workweek_worker` and ask it explicitly to retrieve the shipping address for the resolved employee ID.\n"
         "   d. Verify they satisfy the eligibility criteria (e.g. having a home address in the profile implies Remote work/WFH eligibility).\n"
-        "   e. Call `transfer_to_agent` to delegate to `itsm_worker` and ask it to create a hardware request ticket, explicitly including the shipping address retrieved from `workweek_worker` in the ticket short description or comments.\n"
+        "   e. Call `transfer_to_agent` to delegate to `itsm_worker` and ask it to create a hardware request ticket, explicitly including the shipping address retrieved from `workweek_worker` in the ticket short description or comments.\n\n"
+        "6. **Multi-language Support:** Detect the user's preferred language from the session state (the `preferred_language` parameter). "
+        "Always output your final assistant response in that language (supporting English, Spanish, French, German, Portuguese, and Hindi). "
+        "Translate policy details and conversation output dynamically for the user."
     ),
     tools=[query_policy_knowledge_base, resolve_employee_id],
     sub_agents=[workweek_worker, itsm_worker],
