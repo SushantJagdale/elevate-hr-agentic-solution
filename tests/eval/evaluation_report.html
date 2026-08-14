@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Altostrat Elevate-HR - Agent Evaluation Report</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+
+  <div class="max-w-6xl mx-auto py-12 px-6">
+    <!-- Header -->
+    <div class="bg-white border border-slate-200 rounded-xl p-8 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Agent Evaluation Report</h1>
+        <p class="text-sm text-slate-500 mt-1">Altostrat Elevate-HR Orchestration Suite</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          ● Status: Passed
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+          Target: http://127.0.0.1:8000
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+          Date: Aug 13, 2026
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Card 1 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Average Judge Score</p>
+          <h3 class="text-4xl font-extrabold text-slate-900 mt-1">5.00 <span class="text-lg text-slate-400 font-normal">/ 5.0</span></h3>
+        </div>
+        <div class="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Average Conversation Turns</p>
+          <h3 class="text-4xl font-extrabold text-slate-900 mt-1">1.00</h3>
+        </div>
+        <div class="p-3 bg-blue-50 rounded-lg text-blue-600">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Test Cases</p>
+          <h3 class="text-4xl font-extrabold text-slate-900 mt-1">5 <span class="text-lg text-slate-400 font-normal">cases</span></h3>
+        </div>
+        <div class="p-3 bg-purple-50 rounded-lg text-purple-600">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Cases Breakdown -->
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-8">
+      <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+        <h2 class="text-lg font-bold text-slate-900">Test Cases Verdicts</h2>
+        <p class="text-sm text-slate-500">LLM-as-judge analysis & reasoning breakdown</p>
+      </div>
+
+      <div class="divide-y divide-slate-100">
+        <!-- Case 1 -->
+        <div class="p-6 hover:bg-slate-50 transition-colors">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Case 1</span>
+                <h4 class="font-bold text-slate-900 text-base">policy_bereavement_leave</h4>
+              </div>
+              <p class="text-sm text-slate-500 mt-1">Prompt: <span class="italic text-slate-600">"What is the company's bereavement leave policy?"</span></p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Score: 5.0</span>
+                <span class="block text-xs text-slate-400 mt-0.5">Turns: 1</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200/60 text-sm text-slate-600">
+            <strong>Judge Feedback:</strong> "The agent provided an accurate, clear, and complete answer that matches the expected ground truth perfectly, including the exact source reference."
+          </div>
+        </div>
+
+        <!-- Case 2 -->
+        <div class="p-6 hover:bg-slate-50 transition-colors">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Case 2</span>
+                <h4 class="font-bold text-slate-900 text-base">workweek_check_balances</h4>
+              </div>
+              <p class="text-sm text-slate-500 mt-1">Prompt: <span class="italic text-slate-600">"How many vacation days do I have remaining in my account?"</span></p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Score: 5.0</span>
+                <span class="block text-xs text-slate-400 mt-0.5">Turns: 1</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200/60 text-sm text-slate-600">
+            <strong>Judge Feedback:</strong> "The model accurately identified that the user has 15.0 vacation days remaining, matching both the tool output and the expected answer."
+          </div>
+        </div>
+
+        <!-- Case 3 -->
+        <div class="p-6 hover:bg-slate-50 transition-colors">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Case 3</span>
+                <h4 class="font-bold text-slate-900 text-base">workweek_vacation_request</h4>
+              </div>
+              <p class="text-sm text-slate-500 mt-1">Prompt: <span class="italic text-slate-600">"Please submit a vacation request for next Thursday and Friday."</span></p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Score: 5.0</span>
+                <span class="block text-xs text-slate-400 mt-0.5">Turns: 1</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200/60 text-sm text-slate-600">
+            <strong>Judge Feedback:</strong> "The assistant appropriately checked the employee's vacation balance first, then clearly and politely asked for the exact calendar dates (YYYY-MM-DD) needed to complete the vacation request accurately."
+          </div>
+        </div>
+
+        <!-- Case 4 -->
+        <div class="p-6 hover:bg-slate-50 transition-colors">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Case 4</span>
+                <h4 class="font-bold text-slate-900 text-base">itsm_vpn_issue</h4>
+              </div>
+              <p class="text-sm text-slate-500 mt-1">Prompt: <span class="italic text-slate-600">"Create an IT ticket because my VPN connection keeps dropping."</span></p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Score: 5.0</span>
+                <span class="block text-xs text-slate-400 mt-0.5">Turns: 1</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200/60 text-sm text-slate-600">
+            <strong>Judge Feedback:</strong> "The assistant correctly resolved the employee ID, checked existing tickets for duplicates, created an IT ticket with appropriate details for the VPN issue, and returned a complete summary of the created ticket to the user."
+          </div>
+        </div>
+
+        <!-- Case 5 -->
+        <div class="p-6 hover:bg-slate-50 transition-colors">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Case 5</span>
+                <h4 class="font-bold text-slate-900 text-base">procure_home_monitor</h4>
+              </div>
+              <p class="text-sm text-slate-500 mt-1">Prompt: <span class="italic text-slate-600">"I am eligible for a home office monitor. Can you verify my status and order one for me?"</span></p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Score: 5.0</span>
+                <span class="block text-xs text-slate-400 mt-0.5">Turns: 1</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200/60 text-sm text-slate-600">
+            <strong>Judge Feedback:</strong> "The assistant correctly verified the policy eligibility, checked for existing tickets to avoid creating duplicates per standard operating procedures, and provided a clear, well-formatted response detailing the policy and the open ticket tracking the request."
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

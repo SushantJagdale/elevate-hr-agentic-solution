@@ -1,0 +1,334 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "multiturn_leave_clarification_and_booking",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "I'd like to take a few days off for vacation in early September."
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "agent",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "I can help you submit a vacation request in WorkWeek. You currently have 15 days of vacation remaining. What are your specific start and end dates (YYYY-MM-DD)?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Please book from 2026-09-01 to 2026-09-04."
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Your vacation request for 2026-09-01 to 2026-09-04 (4 days) has been successfully submitted in WorkWeek under reference ID LR-2026-0901. Status: Submitted."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "multiturn_date_validation_retry",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Please submit time off starting on 2026-10-25 and ending on 2026-10-20."
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "agent",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "The start date (2026-10-25) cannot be after the end date (2026-10-20). Could you please provide the corrected dates?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Sorry for the typo, I meant starting on 2026-10-20 and ending on 2026-10-25."
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Thank you for the correction. Your vacation request from 2026-10-20 to 2026-10-25 has been successfully submitted in WorkWeek. Reference ID: LR-2026-1020."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "multiturn_remote_procurement_flow",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Can I get a new external monitor for my home office setup?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "agent",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "Under the Remote Work Equipment Policy 2026 (Section 2.1), remote employees (>80% WFH) are eligible for 1x 27-inch 4K monitor. Would you like me to check your profile eligibility and place the order for you?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Yes please, check my eligibility and order it to my home address."
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "I verified your WorkWeek profile (Work Location: Remote). You are eligible for 1x 27-inch 4K monitor. I have created a hardware procurement ticket in ServiceImmediately (Ticket: INC-7890) with delivery to your registered home address."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "multiturn_ticket_troubleshooting_to_creation",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "My laptop screen has severe vertical lines and flickering issues."
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "agent",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "That sounds like a hardware display failure. Would you like me to raise an IT support ticket in ServiceImmediately for a screen or laptop replacement?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Yes, please raise the ticket with high priority as it is slowing down my work."
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "I have created an IT hardware support ticket in ServiceImmediately:\n- Ticket: INC-9104\n- Description: Laptop display flickering and vertical lines\n- Priority: 2 - High\n- State: Open\nAn IT technician will reach out to schedule diagnostics or replacement."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "multiturn_ticket_comment_update",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "What is the status of my ticket INC-8012?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "agent",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "Ticket INC-8012 ('Laptop keyboard replacement') is currently In Progress and assigned to Hardware Support."
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Please add a note to the ticket: 'I will be traveling next week, so please hold delivery until Monday'."
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "I have added your comment to ticket INC-8012: 'I will be traveling next week, so please hold delivery until Monday'. The ticket timeline has been updated."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "multiturn_policy_followup_and_action",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "How many days of bereavement leave does our policy permit?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "agent",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "Employees are eligible for up to 5 days of paid bereavement leave. [Source: Leave Policy 2026, Section 4.2](https://hr.corp/policies/leave#sec4.2). Would you like help submitting this leave request?"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "Yes, please submit 3 days of bereavement leave starting tomorrow (2026-08-15 to 2026-08-17)."
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Your bereavement leave request from 2026-08-15 to 2026-08-17 (3 days) has been successfully submitted in WorkWeek. Reference ID: LR-2026-0815. Please let me know if you need any additional assistance."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
