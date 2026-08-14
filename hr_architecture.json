@@ -48,7 +48,7 @@
     { "id": "document_ai", "type": "cloud", "label": "Document AI & Embeddings", "sublabel": "text-embedding-004 (768d)", "pos": [1280, 110], "size": [175, 65], "tag": "Vector Ingestion" },
     { "id": "workweek_hcm", "type": "external", "label": "WorkWeek HCM", "sublabel": "HCM REST API", "pos": [1070, 270], "size": [150, 60], "tag": "Enterprise SaaS" },
     { "id": "service_immediately", "type": "external", "label": "ServiceImmediately ITSM", "sublabel": "ITSM API", "pos": [1070, 410], "size": [150, 60], "tag": "Enterprise SaaS" },
-    { "id": "bigquery_worm", "type": "database", "label": "BigQuery WORM Vault", "sublabel": "Immutable Audit Logs (7-Yr)", "pos": [1280, 490], "size": [155, 65], "tag": "Compliance Audit" }
+    { "id": "bigquery_worm", "type": "database", "label": "BigQuery WORM Vault", "sublabel": "Immutable Audit Logs", "pos": [1280, 490], "size": [155, 65], "tag": "Compliance Audit" }
   ],
   "boundaries": [
     { "kind": "region", "label": "GCP Cloud & External Services Topology", "wraps": ["cloud_armor", "iap_proxy", "frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "firestore", "document_ai", "workweek_hcm", "service_immediately", "bigquery_worm"] },
