@@ -53,7 +53,7 @@
     { "id": "service_immediately", "type": "external", "label": "ServiceImmediately ITSM", "sublabel": "ITSM API", "pos": [1390, 370], "size": [150, 60], "tag": "Enterprise SaaS" }
   ],
   "boundaries": [
-    { "kind": "region", "label": "GCP Cloud & External Services Topology", "wraps": ["cloud_armor", "iap_proxy", "frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "vertex_embeddings", "workweek_agent", "service_agent", "bigquery", "firestore", "workweek_hcm", "service_immediately"] },
+    { "kind": "region", "label": "Google Cloud", "wraps": ["cloud_armor", "iap_proxy", "frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "vertex_embeddings", "workweek_agent", "service_agent", "bigquery", "firestore", "workweek_hcm", "service_immediately"] },
     { "kind": "security-group", "label": "VPC Service Controls (VPC-SC) Secure Boundary", "wraps": ["frontend", "safety_guardrail", "adk_root_agent", "secret_manager", "business_rules", "vertex_embeddings", "workweek_agent", "service_agent", "bigquery", "firestore"] },
     { "kind": "security-group", "label": "ADK Agent Orchestration Boundary", "wraps": ["adk_root_agent", "workweek_agent", "service_agent"] },
     { "kind": "security-group", "label": "Enterprise SaaS External Integration Boundary", "wraps": ["workweek_hcm", "service_immediately"] }
