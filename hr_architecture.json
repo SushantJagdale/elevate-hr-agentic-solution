@@ -72,6 +72,6 @@
   "cards": [
     { "dot": "cyan", "title": "Zero-Trust Ingress", "items": ["Cloud Armor WAF filters OWASP Top 10 & DDoS attacks", "IAP extracts user email, ID, and JWT identity claims", "Safety interceptor screens payloads in sub-300ms p95"] },
     { "dot": "rose", "title": "ADK Root Agent & Governance", "items": ["Central Root Agent orchestrates intent classification and tool execution", "Secret Manager provides fast in-memory credential caching", "Deterministic Python guardrails enforce business chronology and grounding"] },
-    { "dot": "emerald", "title": "Unified State & Audit Vault", "items": ["Firebase Firestore manages 30-min idle TTL session state and HNSW policy vectors", "BigQuery WORM Vault preserves immutable 7-year audit logs with CMEK encryption"] }
+    { "dot": "emerald", "title": "Unified State & Audit Vault", "items": ["Firebase Firestore manages 30-min idle TTL session state and HNSW policy vectors", "BigQuery WORM Vault preserves immutable audit logs with CMEK encryption"] }
   ]
 }
